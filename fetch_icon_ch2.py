@@ -3,7 +3,9 @@ import earthkit.data as ekd
 import numpy as np
 import math
 
-def calculate_dew_point(T_celsius, q, P_hpa=1013.25):
+def calculate_dew_point(T_celsius, q, h):
+    # calculate the pressure in hPa
+    P_hpa = 1013.25 * (1 - 0.0000225577 * h)**5.25588
     
     # 1. convert specific humidity (q) in the mixing ratio (r)
     r = q / (1.0 - q)
@@ -104,7 +106,8 @@ for loc in locations:
         specific_humidity = dataset_qv["q"].sel(
             level=desired_level,
             values=next_index)
-        dew_point = calculate_dew_point(temperature[locations.index(loc), level, 0], specific_humidity.values.item())
+        dew_point = calculate_dew_point(temperature[locations.index(loc), level, 0], specific_humidity.values.item(), height.values.item())
+        dewpoint[locations.index(loc), level, 0] = dew_point
         altitude[locations.index(loc), level, 0] = height.values.item()
         temp_celsius = abs_temp.values.item() - 273.15
         print(f"Temperatur {loc} Level {desired_level}, {height.values.item()}: {temp_celsius:.2f} °C, Dew Point: {dew_point:.2f} °C")
