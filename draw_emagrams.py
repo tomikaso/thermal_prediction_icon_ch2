@@ -1,8 +1,11 @@
 import numpy as np
 import locations
-temperature = np.load('temperature_icon_ch2.npy')
-altitude = np.load('altitude_icon_ch2.npy')
-dewpoint = np.load('dewpoint_icon_ch2.npy')
+
+leadtime = 24
+
+temperature = np.load(f'temperature_icon_ch2_{leadtime}.npy')
+altitude = np.load(f'altitude_icon_ch2_{leadtime}.npy')
+dewpoint = np.load(f'dewpoint_icon_ch2_{leadtime}.npy')
 
 loc = 0
 level = 80
@@ -126,7 +129,7 @@ while loc < locations.max_locations:
                 SVG += f'<text x="{x}" y="{y}" fill="dimgrey" font-size="12">{text}</text>'
         i = i + 1
     SVG += '</svg>'
-    SVG_file = open(f"{file_location}emagram_loc{loc}.svg", "w")
+    SVG_file = open(f"{file_location}emagram_loc{loc:02d}.svg", "w")
     SVG_file.write(SVG)
     SVG_file.close()
     loc += 1

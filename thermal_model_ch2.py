@@ -33,9 +33,9 @@ def rh_from_tdew(temp_air, temp_dew):
     return es / e
 
 # Loading ICON Data
-temperature = np.load('temperature_icon_ch2.npy')
-altitude = np.load('altitude_icon_ch2.npy')
-dewpoint = np.load('dewpoint_icon_ch2.npy')
+temperature = np.load('temperature_icon_ch2_1.npy')
+altitude = np.load('altitude_icon_ch2_1.npy')
+dewpoint = np.load('dewpoint_icon_ch2_1.npy')
 
 
 # here the model begins
