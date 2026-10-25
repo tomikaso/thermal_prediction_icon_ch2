@@ -6,6 +6,8 @@ leadtime = 24
 temperature = np.load(f'temperature_icon_ch2_{leadtime}.npy')
 altitude = np.load(f'altitude_icon_ch2_{leadtime}.npy')
 dewpoint = np.load(f'dewpoint_icon_ch2_{leadtime}.npy')
+wind_speed = np.load(f'wind_speed_icon_ch2_{leadtime}.npy')
+wind_direction = np.load(f'wind_direction_icon_ch2_{leadtime}.npy')
 
 loc = 0
 level = 80
@@ -83,6 +85,9 @@ while loc < locations.max_locations:
         d1 = dewpoint[loc, level, 0]
         h1 = altitude[loc, level, 0]
         temp = (t1 - t0) / (h1 - h0) * 100
+
+        print(f"height: {h1:.1f}, wind_speed {wind_speed[loc, level, 0]:.1f} wind_dir: {wind_direction[loc, level, 0]:.1f}")
+
         # Temperature line in red
         x0 = border + t_dist * t0 * 0.1 + (h0 - h00) / hd * ty + t_dist * offset
         x1 = border + t_dist * t1 * 0.1 + (h1 - h00) / hd * ty + t_dist * offset
@@ -129,7 +134,7 @@ while loc < locations.max_locations:
                 SVG += f'<text x="{x}" y="{y}" fill="dimgrey" font-size="12">{text}</text>'
         i = i + 1
     SVG += '</svg>'
-    SVG_file = open(f"{file_location}emagram_loc{loc:02d}.svg", "w")
+    SVG_file = open(f"{file_location}emagram_loc{loc:02d}_{leadtime:02d}.svg", "w")
     SVG_file.write(SVG)
     SVG_file.close()
     loc += 1
