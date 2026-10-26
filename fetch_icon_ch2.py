@@ -118,7 +118,6 @@ while leadtime < 25:
     # print("My Radiation: ", dataset_r)
     print(f'Init Time Radiation: {init_time}, Leadtime: {leadtime}')
 
-
     
     # now get the vertical levels from the ICON-CH2 dataset
     vertical_ch2 = ekd.from_source(
