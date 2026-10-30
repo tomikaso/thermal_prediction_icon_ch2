@@ -25,17 +25,23 @@ def calculate_dew_point(T_celsius, q, h):
 number_of_locations = locations.max_locations
 
 # define temperature
-temperature = np.full((number_of_locations, 81, 12), 0.00) # 81 levels, 14 locations, 12 time steps
-altitude = np.full((number_of_locations, 81, 12), 0.00) # 81 levels, 14 locations, 12 time steps
-dewpoint = np.full((number_of_locations, 81, 12), 0.00) # 81 levels, 14 locations, 12 time steps
-wind_speed = np.full((number_of_locations, 81, 12), 0.00) # 81 levels, 14 locations, 12 time steps
-wind_direction = np.full((number_of_locations, 81, 12), 0.00) # 81 levels, 14 locations, 12 time steps
-radiation = np.full((number_of_locations, 12), 0.00) # 81 levels, 14 locations, 12 time steps
+temperature = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+altitude = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+dewpoint = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+wind_speed = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+wind_direction = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+radiation = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
 
-x = dt.datetime.now()
-print(f'Starting load at: {x}')
-leadtime = 16 # tomorrow
-while leadtime < 25:
+start_time = dt.datetime.now()
+start_date = start_time.strftime("%Y%m%d")
+print(f'Starting load at: {start_time}')
+start_hour = start_time.hour
+if start_hour < 20: # we begin with the corrent day
+    target_date = dt.date.today().isoformat()
+    z00_reference_time = f"{target_date}T00:00:00Z"
+
+leadtime = 3
+while leadtime < 13:
 # required data is Temperature
     forecast_t = ekd.from_source(
         "meteoswiss-opendata",
@@ -98,14 +104,16 @@ while leadtime < 25:
     )
     
     dataset_v = forecast_v.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
-    init_time = dataset_v["forecast_reference_time"].values
+    load_hour = int(dataset_v["forecast_reference_time"].dt.hour[0].values) # 0, 6, 12, 18
+    print(f"Ladezeit: z{load_hour}")
+    
     print(f'Init Time Dataset V-Wind: {init_time}, Leadtime: {leadtime}')
 
-    # ASOB_S Net short wave radiation flux (at the surface)
+    # Downward direct short wave radiation flux at surface (mean over forecast time)
     forecast_r = ekd.from_source(
             "meteoswiss-opendata",
             collection="ogd-forecasting-icon-ch2",
-            variable="ASOB_S",
+            variable="ASOD_S",
             perturbed=False,
             ref_time="latest",
             lead_time=[
@@ -115,7 +123,7 @@ while leadtime < 25:
         
     dataset_r = forecast_r.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
     init_time = dataset_r["forecast_reference_time"].values
-    # print("My Radiation: ", dataset_r)
+    print("My Radiation: ", dataset_r)
     print(f'Init Time Radiation: {init_time}, Leadtime: {leadtime}')
     
     # now get the vertical levels from the ICON-CH2 dataset
@@ -146,8 +154,8 @@ while leadtime < 25:
         next_index = distanz.argmin().item()
 
         # Measures without levels
-        radiation_w = dataset_r["avg_snswrf"].sel(values=next_index)
-        radiation[loc, 0] = radiation_w.values.item()
+        radiation_w = dataset_r["avg_sdswrf"].sel(values=next_index)
+        radiation[loc, leadtime + load_hour] = radiation_w.values.item()
     
         level = 1
         while level <= 80:
@@ -156,7 +164,7 @@ while leadtime < 25:
             abs_temp = dataset_t["t"].sel(
                 level=desired_level,
                 values=next_index)
-            temperature[loc, level, 0] = abs_temp.values.item() - 273.15
+            temperature[loc, level, leadtime + load_hour] = abs_temp.values.item() - 273.15
             height = ds_hhl_ch2["h"].sel(
                     level=desired_level,
                     values=next_index)
@@ -170,23 +178,23 @@ while leadtime < 25:
                 level=desired_level,
                 values=next_index)
             dew_point = calculate_dew_point(temperature[loc, level, 0], specific_humidity.values.item(), height.values.item())
-            dewpoint[loc, level, 0] = dew_point
-            altitude[loc, level, 0] = height.values.item()
+            dewpoint[loc, level, leadtime + load_hour] = dew_point
+            altitude[loc, level, leadtime + load_hour] = height.values.item()
             temp_celsius = abs_temp.values.item() - 273.15
-            wind_speed[loc, level, 0] = math.sqrt(u_wind.values.item() ** 2 + v_wind.values.item() ** 2) * 3.6  # km/h
-            wind_direction[loc, level, 0] = (math.atan2(u_wind.values.item(), v_wind.values.item()) * 180 / math.pi + 180 ) % 360
+            wind_speed[loc, level, leadtime + load_hour] = math.sqrt(u_wind.values.item() ** 2 + v_wind.values.item() ** 2) * 3.6  # km/h
+            wind_direction[loc, level, leadtime + load_hour] = (math.atan2(u_wind.values.item(), v_wind.values.item()) * 180 / math.pi + 180 ) % 360
             # test code: print(f"Temperatur {loc} Level {desired_level}, {height.values.item()}: {temp_celsius:.2f} °C, Dew Point: {dew_point:.2f} °C")
             level += 1
         x = dt.datetime.now()
         print(f'Next Objects at: {x}')
         loc = loc + 1
     # printing results
-    print(f"Leadtime: {leadtime}, saving temperature, altitude and dewpoint to numpy arrays")
-    np.save(f"temperature_icon_ch2_{leadtime}.npy", temperature)
-    np.save(f"altitude_icon_ch2_{leadtime}.npy", altitude)
-    np.save(f"dewpoint_icon_ch2_{leadtime}.npy", dewpoint)
-    np.save(f"wind_speed_icon_ch2_{leadtime}.npy", wind_speed)
-    np.save(f"wind_direction_icon_ch2_{leadtime}.npy", wind_direction)
-    np.save(f"radiation_icon_ch2_{leadtime}.npy", radiation)
+    print(f"Leadtime: {leadtime}, z{load_hour}saving temperature, altitude and dewpoint to numpy arrays")
     leadtime = leadtime +1
+np.save(f"temperature_icon_ch2_{start_date}.npy", temperature)
+np.save(f"altitude_icon_ch2_{start_date}.npy", altitude)
+np.save(f"dewpoint_icon_ch2_{start_date}.npy", dewpoint)
+np.save(f"wind_speed_icon_ch2_{start_date}.npy", wind_speed)
+np.save(f"wind_direction_icon_ch2_{start_date}.npy", wind_direction)
+np.save(f"radiation_icon_ch2_{start_date}.npy", radiation)
 print(f"Process successfully finished")

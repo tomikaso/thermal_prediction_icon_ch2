@@ -1,13 +1,14 @@
 import numpy as np
 import locations
 
-leadtime = 24
+lt_time = 12
+init = "20261030"
 
-temperature = np.load(f'temperature_icon_ch2_{leadtime}.npy')
-altitude = np.load(f'altitude_icon_ch2_{leadtime}.npy')
-dewpoint = np.load(f'dewpoint_icon_ch2_{leadtime}.npy')
-wind_speed = np.load(f'wind_speed_icon_ch2_{leadtime}.npy')
-wind_direction = np.load(f'wind_direction_icon_ch2_{leadtime}.npy')
+temperature = np.load(f'temperature_icon_ch2_{init}.npy')
+altitude = np.load(f'altitude_icon_ch2_{init}.npy')
+dewpoint = np.load(f'dewpoint_icon_ch2_{init}.npy')
+wind_speed = np.load(f'wind_speed_icon_ch2_{init}.npy')
+wind_direction = np.load(f'wind_direction_icon_ch2_{init}.npy')
 
 loc = 0
 level = 80
@@ -37,23 +38,23 @@ while loc < locations.max_locations:
     print(f"Location {loc}: {locations.name_start[loc]}")
     SVG = f'<svg width="{width}" height="{height}" style="background-color:ivory" xmlns="http://www.w3.org/2000/svg">'
     # initialize the bottem values
-    t0 = temperature[loc, level, 0]
-    h0 = altitude[loc, level, 0]
-    hmax = altitude[loc, 38, 0]
-    d0 = dewpoint[loc, level, 0]
-    h00 = altitude[loc, 80, 0]
+    t0 = temperature[loc, level, lt_time]
+    h0 = altitude[loc, level, lt_time]
+    hmax = altitude[loc, 38, lt_time]
+    d0 = dewpoint[loc, level, lt_time]
+    h00 = altitude[loc, 80, lt_time]
     hd = hmax - h00
     # fix scale: for negative temperatures 1, then 0 for low positive and +1 if hot. Mean of 1500m and 3000m
     offset = - int((temperature[loc, 50, 0] + temperature[loc, 66, 0]) / 20)
     print(f"Location {loc}: offset = {offset}, hmax = {hmax}, h00 = {h00}, hd = {hd}")
     SVG = f'<svg width="{width}" height="{height}" style="background-color:ivory" xmlns="http://www.w3.org/2000/svg">'
-    SVG += f'<text x="{border}" y="{16}" fill="dimgrey" font-size="12">{locations.name_start[loc]}</text>'
+    SVG += f'<text x="{border}" y="{16}" fill="dimgrey" font-size="12">{locations.name_start[loc]}, {init}, at {lt_time}</text>'
     # initialize the bottem values
-    t0 = temperature[loc, level, 0]
-    h0 = altitude[loc, level, 0]
-    hmax = altitude[loc, 38, 0]
-    d0 = dewpoint[loc, level, 0]
-    h00 = altitude[loc, 80, 0]
+    t0 = temperature[loc, level, lt_time]
+    h0 = altitude[loc, level, lt_time]
+    hmax = altitude[loc, 38, lt_time]
+    d0 = dewpoint[loc, level, lt_time]
+    h00 = altitude[loc, 80, lt_time]
     hd = hmax - h00
     # fix scale: for negative temperatures 1, then 0 for low positive and +1 if hot. Mean of 1500m and 3000m
     offset = - int((temperature[loc, 50, 0] + temperature[loc, 66, 0]) / 20)
@@ -62,8 +63,8 @@ while loc < locations.max_locations:
     # draw the backgroung prior to the lines
     while level > 38:
         level -= 1
-        t1 = temperature[loc, level, 0]
-        h1 = altitude[loc, level, 0]
+        t1 = temperature[loc, level, lt_time]
+        h1 = altitude[loc, level, lt_time]
         temp = (t1 - t0) / (h1 - h0) * 100
         # Temperature line in red
         x0 = border + t_dist * t0 * 0.1 + (h0 - h00) / hd * ty + t_dist * offset
@@ -76,17 +77,15 @@ while loc < locations.max_locations:
         t0 = t1
         h0 = h1
     level = 80
-    t0 = temperature[loc, level, 0]
-    h0 = altitude[loc, level, 0]
+    t0 = temperature[loc, level, lt_time]
+    h0 = altitude[loc, level, lt_time]
     # draw the lines for temperature and dewpoint
     while level > 38:
         level -= 1
-        t1 = temperature[loc, level, 0]
-        d1 = dewpoint[loc, level, 0]
-        h1 = altitude[loc, level, 0]
+        t1 = temperature[loc, level, lt_time]
+        d1 = dewpoint[loc, level, lt_time]
+        h1 = altitude[loc, level, lt_time]
         temp = (t1 - t0) / (h1 - h0) * 100
-
-        print(f"height: {h1:.1f}, wind_speed {wind_speed[loc, level, 0]:.1f} wind_dir: {wind_direction[loc, level, 0]:.1f}")
 
         # Temperature line in red
         x0 = border + t_dist * t0 * 0.1 + (h0 - h00) / hd * ty + t_dist * offset
@@ -134,7 +133,7 @@ while loc < locations.max_locations:
                 SVG += f'<text x="{x}" y="{y}" fill="dimgrey" font-size="12">{text}</text>'
         i = i + 1
     SVG += '</svg>'
-    SVG_file = open(f"{file_location}emagram_loc{loc:02d}_{leadtime:02d}.svg", "w")
+    SVG_file = open(f"{file_location}emagram_loc{loc:02d}_{lt_time:02d}.svg", "w")
     SVG_file.write(SVG)
     SVG_file.close()
     loc += 1
