@@ -1,9 +1,11 @@
 import datetime as dt
+from zoneinfo import ZoneInfo
 import earthkit.data as ekd
 import numpy as np
 import math
 import locations
 import json
+from pathlib import Path
 
 def calculate_dew_point(T_celsius, q, h):
     # calculate the pressure in hPa
@@ -27,26 +29,53 @@ with open("load_status.json", "r") as file:
     loaded_data = json.load(file)
 print(f"Last Leadtime: {loaded_data["leadtime"]}")
 leadtime_original = loaded_data["leadtime"]
+if (leadtime_original + loaded_data["model_run"]) % 24 >= 20: # jump to the next day
+    leadtime_original = leadtime_original + 24
 
+# basic parameters
+path = "data/"
+load_hour = 0
+leadtime = 0
 number_of_locations = locations.max_locations
-
-# define temperature
-temperature = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
-altitude = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
-dewpoint = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
-wind_speed = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
-wind_direction = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
-radiation = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
-
-start_time = dt.datetime.now()
+new_day_flag = False
+local_tz = ZoneInfo("Europe/Zurich")
+start_time = dt.datetime.now(local_tz)
 start_date = start_time.strftime("%Y%m%d")
+local_tz = ZoneInfo("Europe/Zurich")
+utc_offset = int(start_time.utcoffset().total_seconds() / 3600)
+start_date = start_time.strftime("%Y%m%d")
+start_hour = ((start_time.hour - 3 ) // 6) * 6 
 print(f'Starting load at: {start_time}')
-start_hour = start_time.hour
-if start_hour < 20: # we begin with the corrent day
-    target_date = dt.date.today().isoformat()
-    z00_reference_time = f"{target_date}T00:00:00Z"
 
-leadtime = leadtime_original
+# is there already data for this date?
+datei_pfad = Path(f"{path}temperature_icon_ch2_{start_date}.npy")
+if datei_pfad.is_file():
+    temperature = np.load(f"{path}temperature_icon_ch2_{start_date}.npy")
+    altitude = np.load(f"{path}altitude_icon_ch2_{start_date}.npy")
+    dewpoint = np.load(f"{path}dewpoint_icon_ch2_{start_date}.npy")
+    wind_speed = np.load(f"{path}wind_speed_icon_ch2_{start_date}.npy")
+    wind_direction = np.load(f"{path}wind_direction_icon_ch2_{start_date}.npy")
+    radiation = np.load(f"{path}radiation_icon_ch2_{start_date}.npy")
+    leadtime = leadtime_original # we are in an ongoing load
+else:
+    # define temperature
+    temperature = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+    altitude = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+    dewpoint = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+    wind_speed = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+    wind_direction = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+    radiation = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+    new_day_flag = True
+
+    # calculating the leadtimes
+    if start_hour < 12: # we begin with the corrent day for z00 and z06
+        leadtime = 9 - utc_offset - start_hour
+    else:
+        leadtime = 9 - utc_offset - start_hour + 24
+    print(f'Start hour: z{start_hour}, leadtime: {leadtime}')
+    leadtime_original = leadtime
+
+
 while leadtime < leadtime_original + 2:
 # required data is Temperature
     forecast_t = ekd.from_source(
@@ -170,7 +199,7 @@ while leadtime < leadtime_original + 2:
             abs_temp = dataset_t["t"].sel(
                 level=desired_level,
                 values=next_index)
-            temperature[loc, level, leadtime + load_hour] = abs_temp.values.item() - 273.15
+            temperature[loc, level, leadtime + load_hour + utc_offset] = abs_temp.values.item() - 273.15
             height = ds_hhl_ch2["h"].sel(
                     level=desired_level,
                     values=next_index)
@@ -183,30 +212,34 @@ while leadtime < leadtime_original + 2:
             v_wind = dataset_v["v"].sel(
                 level=desired_level,
                 values=next_index)
-            dew_point = calculate_dew_point(temperature[loc, level, 0], specific_humidity.values.item(), height.values.item())
-            dewpoint[loc, level, leadtime + load_hour] = dew_point
-            altitude[loc, level, leadtime + load_hour] = height.values.item()
+            dew_point = calculate_dew_point(temperature[loc, level, leadtime + load_hour + utc_offset], specific_humidity.values.item(), height.values.item())
+            dewpoint[loc, level, leadtime + load_hour + utc_offset] = dew_point
+            altitude[loc, level, leadtime + load_hour + utc_offset] = height.values.item()
             temp_celsius = abs_temp.values.item() - 273.15
-            wind_speed[loc, level, leadtime + load_hour] = math.sqrt(u_wind.values.item() ** 2 + v_wind.values.item() ** 2) * 3.6  # km/h
-            wind_direction[loc, level, leadtime + load_hour] = (math.atan2(u_wind.values.item(), v_wind.values.item()) * 180 / math.pi + 180 ) % 360
+            wind_speed[loc, level, leadtime + load_hour + utc_offset] = math.sqrt(u_wind.values.item() ** 2 + v_wind.values.item() ** 2) * 3.6  # km/h
+            wind_direction[loc, level, leadtime + load_hour + utc_offset] = (math.atan2(u_wind.values.item(), v_wind.values.item()) * 180 / math.pi + 180 ) % 360
             # test code: print(f"Temperatur {loc} Level {desired_level}, {height.values.item()}: {temp_celsius:.2f} °C, Dew Point: {dew_point:.2f} °C")
             level += 1
-        x = dt.datetime.now()
-        print(f'Next Objects at: {x}')
+        now = dt.datetime.now()
+        print(f'Next Objects at: {now}')
         loc = loc + 1
     # printing results
     print(f"Leadtime: {leadtime}, z{load_hour}saving temperature, altitude and dewpoint to numpy arrays")
     leadtime = leadtime +1
-np.save(f"temperature_icon_ch2_{start_date}_lt_{load_hour + leadtime_original}.npy", temperature)
-np.save(f"altitude_icon_ch2_{start_date}_lt_{load_hour + leadtime_original}.npy", altitude)
-np.save(f"dewpoint_icon_ch2_{start_date}_lt_{load_hour + leadtime_original}.npy", dewpoint)
-np.save(f"wind_speed_icon_ch2_{start_date}_lt_{load_hour + leadtime_original}.npy", wind_speed)
-np.save(f"wind_direction_icon_ch2_{start_date}_lt_{load_hour + leadtime_original}.npy", wind_direction)
-np.save(f"radiation_icon_ch2_{start_date}_lt_{load_hour + leadtime_original}.npy", radiation)
+
+# everything worked well, write out results
+np.save(f"{path}temperature_icon_ch2_{start_date}.npy", temperature)
+np.save(f"{path}altitude_icon_ch2_{start_date}.npy", altitude)
+np.save(f"{path}dewpoint_icon_ch2_{start_date}.npy", dewpoint)
+np.save(f"{path}wind_speed_icon_ch2_{start_date}.npy", wind_speed)
+np.save(f"{path}wind_direction_icon_ch2_{start_date}.npy", wind_direction)
+np.save(f"{path}radiation_icon_ch2_{start_date}.npy", radiation)
 
 load_status = {
     "status": "ok",
     "leadtime": leadtime,
+    "model_run": load_hour,
+    "last_change": now.isoformat()
 }
 # write the dictionary to a file
 with open("load_status.json", "w") as file:
