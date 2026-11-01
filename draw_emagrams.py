@@ -1,14 +1,21 @@
 import numpy as np
 import locations
+import json
+import math
 
-lt_time = 12
-init = "20261030"
+lt_time = 12 + 0 * 24
+init = "20261101"
+path = "data/"
+with open("load_status.json", "r") as file:
+    load_status = json.load(file)
+print(f"Last Leadtime: {load_status["leadtime"]}, model run: z{load_status["model_run"]}")
+model_run = f'ICON-CH2, run: {init} z{load_status["model_run"]}'
 
-temperature = np.load(f'temperature_icon_ch2_{init}.npy')
-altitude = np.load(f'altitude_icon_ch2_{init}.npy')
-dewpoint = np.load(f'dewpoint_icon_ch2_{init}.npy')
-wind_speed = np.load(f'wind_speed_icon_ch2_{init}.npy')
-wind_direction = np.load(f'wind_direction_icon_ch2_{init}.npy')
+temperature = np.load(f'{path}temperature_icon_ch2_{init}.npy')
+altitude = np.load(f'{path}altitude_icon_ch2_{init}.npy')
+dewpoint = np.load(f'{path}dewpoint_icon_ch2_{init}.npy')
+wind_speed = np.load(f'{path}wind_speed_icon_ch2_{init}.npy')
+wind_direction = np.load(f'{path}wind_direction_icon_ch2_{init}.npy')
 
 loc = 0
 level = 80
@@ -26,12 +33,36 @@ def thermal_visualisation(temp):
             color = data[ic][2]
         ic = ic + 1
     return cont, color
+
+def draw_wind_arrow(strength, direction, x, y):
+    wind_dot = 6
+    if strength < 16 and 180 < direction < 320:
+        dot_color = "limegreen"
+    elif strength < 30:
+        dot_color = "orange"
+    else:
+        dot_color = "tomato"
+    # wind-arrow
+    dx = wind_dot * 2.3 * math.sin(math.radians(direction + 180)) + x
+    dy = - wind_dot * 2.3 * math.cos(math.radians(direction + 180)) + y
+    dx1 = wind_dot * 2 * math.sin(math.radians(direction + 320)) + x
+    dy1 = - wind_dot * 2 * math.cos(math.radians(direction + 320)) + y
+    dx2 = wind_dot * 1 * math.sin(math.radians(direction)) + x
+    dy2 = - wind_dot * 1 * math.cos(math.radians(direction)) + y
+    dx3 = wind_dot * 2 * math.sin(math.radians(direction + 40)) + x
+    dy3 = - wind_dot * 2 * math.cos(math.radians(direction + 40)) + y
+
+    polygon_svg = f'<polygon points="{dx},{dy} {dx1},{dy1} {dx2},{dy2} {dx3},{dy3}" fill="{dot_color}" />'
+    text_svg = f'<text x="{x + 10}" y="{y}" fill="grey" font-family="sans-serif" font-size="12">{str(strength)}</text>'
+    return polygon_svg + text_svg
+
 # SVG-Basics
-width = 600
+width = 450
 height = 600
 border = 50
 t_dist = 150
 ty = height - 2 * border
+tx = width - 2 * border
 
 while loc < locations.max_locations:
     level = 80
@@ -48,7 +79,7 @@ while loc < locations.max_locations:
     offset = - int((temperature[loc, 50, 0] + temperature[loc, 66, 0]) / 20)
     print(f"Location {loc}: offset = {offset}, hmax = {hmax}, h00 = {h00}, hd = {hd}")
     SVG = f'<svg width="{width}" height="{height}" style="background-color:ivory" xmlns="http://www.w3.org/2000/svg">'
-    SVG += f'<text x="{border}" y="{16}" fill="dimgrey" font-size="12">{locations.name_start[loc]}, {init}, at {lt_time}</text>'
+    SVG += f'<text x="{16}" y="{20}" fill="grey" font-family="sans-serif" font-size="14">{locations.name_start[loc]}, at {lt_time}, {model_run}</text>'
     # initialize the bottem values
     t0 = temperature[loc, level, lt_time]
     h0 = altitude[loc, level, lt_time]
@@ -57,7 +88,7 @@ while loc < locations.max_locations:
     h00 = altitude[loc, 80, lt_time]
     hd = hmax - h00
     # fix scale: for negative temperatures 1, then 0 for low positive and +1 if hot. Mean of 1500m and 3000m
-    offset = - int((temperature[loc, 50, 0] + temperature[loc, 66, 0]) / 20)
+    offset = - int((temperature[loc, 50, lt_time] + temperature[loc, 66, lt_time]) / 20) +1 
     print(f"Location {loc}: offset = {offset}, hmax = {hmax}, h00 = {h00}, hd = {hd}")
 
     # draw the backgroung prior to the lines
@@ -67,13 +98,18 @@ while loc < locations.max_locations:
         h1 = altitude[loc, level, lt_time]
         temp = (t1 - t0) / (h1 - h0) * 100
         # Temperature line in red
-        x0 = border + t_dist * t0 * 0.1 + (h0 - h00) / hd * ty + t_dist * offset
-        x1 = border + t_dist * t1 * 0.1 + (h1 - h00) / hd * ty + t_dist * offset
+        x0 = border + t_dist * t0 * 0.1 + (h0 - h00) / hd * tx + t_dist * offset
+        x1 = border + t_dist * t1 * 0.1 + (h1 - h00) / hd * tx + t_dist * offset
         y0 = height - border - (h0-h00) / hd * ty
         y1 = height - border - (h1-h00) / hd * ty
         # Draw the background rectangle color depends of the temperature gradient
         fill_color = thermal_visualisation(-temp)[1]
-        SVG += f'<rect x="{border}" y="{y1}" fill="{fill_color}" stroke="{fill_color}" width="{ty}" height="{y0-y1}" />'
+        SVG += f'<rect x="{border}" y="{y1}" fill="{fill_color}" stroke="{fill_color}" width="{tx}" height="{y0-y1}" />'
+        # comment on stability
+        if level % 6 == 0 and level < 74:
+            text = thermal_visualisation(-temp)[0]
+            SVG += f'<text x="{tx - 10}" y="{y0 + 5}" fill="grey" font-family="sans-serif" font-size="9">{text}</text>'
+
         t0 = t1
         h0 = h1
     level = 80
@@ -88,19 +124,23 @@ while loc < locations.max_locations:
         temp = (t1 - t0) / (h1 - h0) * 100
 
         # Temperature line in red
-        x0 = border + t_dist * t0 * 0.1 + (h0 - h00) / hd * ty + t_dist * offset
-        x1 = border + t_dist * t1 * 0.1 + (h1 - h00) / hd * ty + t_dist * offset
+        x0 = border + t_dist * t0 * 0.1 + (h0 - h00) / hd * tx + t_dist * offset
+        x1 = border + t_dist * t1 * 0.1 + (h1 - h00) / hd * tx + t_dist * offset
         y0 = height - border - (h0-h00) / hd * ty
         y1 = height - border - (h1-h00) / hd * ty
         # Draw the temperature line in red
         SVG += f'<line x1="{x0:.2f}" y1="{y0:.2f}" x2="{x1:.2f}" y2="{y1:.2f}" stroke="red" stroke-width="3"/>'
         # Dewpoint line in blue
-        x0=max(border, border + t_dist * d0 * 0.1 + (h0 - h00) / hd * ty + t_dist * offset)
-        x1=max(border, border + t_dist * d1 * 0.1 + (h1 - h00) / hd * ty + t_dist * offset)
+        x0=max(border, border + t_dist * d0 * 0.1 + (h0 - h00) / hd * tx + t_dist * offset)
+        x1=max(border, border + t_dist * d1 * 0.1 + (h1 - h00) / hd * tx + t_dist * offset)
         y0 = height - border - (h0-h00) / hd * ty
         y1 = height - border - (h1-h00) / hd * ty
         SVG += f'<line x1="{x0:.2f}" y1="{y0:.2f}" x2="{x1:.2f}" y2="{y1:.2f}" stroke="blue" stroke-width="3"/>'
 
+        # draw the wind
+        if level % 3 == 0:
+            SVG += draw_wind_arrow(round(wind_speed[loc, level, lt_time]), wind_direction[loc, level, lt_time], width - border, y1)
+            
         t0 = t1
         h0 = h1
         d0 = d1
@@ -109,12 +149,12 @@ while loc < locations.max_locations:
         x = 10
         y = border + (hmax - i * 1000) / hd * ty
         text = str(i * 1000)
-        SVG += f'<text x="{x}" y="{y}" fill="dimgrey" font-size="12">{text}</text>'
+        SVG += f'<text x="{x}" y="{y}" fill="grey" font-family="sans-serif" font-size="12">{text}</text>'
         if i < 4:
             x0 = border + t_dist * i
             y0 = height - border
-            x1 = height - border
-            y1 = border + t_dist * i 
+            x1 = width - border
+            y1 = border + t_dist * i + height - width
             SVG += f'<line x1="{x0}" y1="{y0}" x2="{x1}" y2="{y1}" stroke="lightgrey" stroke-width="1"/>'  # lines from the bottom
             if i > 0:
                 x0 = border
@@ -125,12 +165,12 @@ while loc < locations.max_locations:
             x = border + t_dist * i
             y = height - border + 20
             text = str((i - offset) * 10)
-            SVG += f'<text x="{x}" y="{y}" fill="dimgrey" font-size="12">{text}</text>'
+            SVG += f'<text x="{x}" y="{y}" fill="grey" font-family="sans-serif" font-size="12">{text}</text>'
             if i < 3:
                 x = border + 60 + t_dist * i
                 y = border - 12
                 text = str((i - offset - 3) * 10)
-                SVG += f'<text x="{x}" y="{y}" fill="dimgrey" font-size="12">{text}</text>'
+                SVG += f'<text x="{x}" y="{y}" fill="grey" font-family="sans-serif" font-size="12">{text}</text>'
         i = i + 1
     SVG += '</svg>'
     SVG_file = open(f"{file_location}emagram_loc{loc:02d}_{lt_time:02d}.svg", "w")
