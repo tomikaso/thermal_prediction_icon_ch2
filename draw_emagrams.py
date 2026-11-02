@@ -3,8 +3,9 @@ import locations
 import json
 import math
 
-lt_time = 12 + 0 * 24
-init = "20261101"
+lt_time = 12 + 1 * 24
+day = lt_time // 24
+init = "20261102"
 path = "data/"
 with open("load_status.json", "r") as file:
     load_status = json.load(file)
@@ -79,7 +80,7 @@ while loc < locations.max_locations:
     offset = - int((temperature[loc, 50, 0] + temperature[loc, 66, 0]) / 20)
     print(f"Location {loc}: offset = {offset}, hmax = {hmax}, h00 = {h00}, hd = {hd}")
     SVG = f'<svg width="{width}" height="{height}" style="background-color:ivory" xmlns="http://www.w3.org/2000/svg">'
-    SVG += f'<text x="{16}" y="{20}" fill="grey" font-family="sans-serif" font-size="14">{locations.name_start[loc]}, at {lt_time}, {model_run}</text>'
+    SVG += f'<text x="{16}" y="{20}" fill="grey" font-family="sans-serif" font-size="14">{locations.name_start[loc]}, day {lt_time // 24} at {lt_time % 24}:00hr, {model_run}</text>'
     # initialize the bottem values
     t0 = temperature[loc, level, lt_time]
     h0 = altitude[loc, level, lt_time]
@@ -173,8 +174,7 @@ while loc < locations.max_locations:
                 SVG += f'<text x="{x}" y="{y}" fill="grey" font-family="sans-serif" font-size="12">{text}</text>'
         i = i + 1
     SVG += '</svg>'
-    SVG_file = open(f"{file_location}emagram_loc{loc:02d}_{lt_time:02d}.svg", "w")
+    SVG_file = open(f"{file_location}emagram_loc{loc:02d}_d{day:1d}lt{(lt_time % 24):02d}.svg", "w")
     SVG_file.write(SVG)
     SVG_file.close()
     loc += 1
-

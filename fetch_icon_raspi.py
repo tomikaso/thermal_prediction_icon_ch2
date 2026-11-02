@@ -29,8 +29,6 @@ with open("load_status.json", "r") as file:
     loaded_data = json.load(file)
 print(f"Last Leadtime: {loaded_data["leadtime"]}")
 leadtime_original = loaded_data["leadtime"]
-if (leadtime_original + loaded_data["model_run"]) % 24 >= 20: # jump to the next day
-    leadtime_original = leadtime_original + 24
 
 # basic parameters
 path = "data/"
@@ -47,6 +45,9 @@ start_date = start_time.strftime("%Y%m%d")
 start_hour = ((start_time.hour - 3 ) // 6) * 6 
 print(f'Starting load at: {start_time}')
 
+if (leadtime_original + loaded_data["model_run"] + utc_offset) % 24 >= 20: # jump to the next day
+    leadtime_original = leadtime_original + 13 # jumps from 20:00 to 09:00 next day
+
 # is there already data for this date?
 datei_pfad = Path(f"{path}temperature_icon_ch2_{start_date}.npy")
 if datei_pfad.is_file():
@@ -58,7 +59,7 @@ if datei_pfad.is_file():
     radiation = np.load(f"{path}radiation_icon_ch2_{start_date}.npy")
     leadtime = leadtime_original # we are in an ongoing load
 else:
-    # define temperature
+    # set everything up for a new, fresh day :-)
     temperature = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
     altitude = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
     dewpoint = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
@@ -68,7 +69,7 @@ else:
     new_day_flag = True
 
     # calculating the leadtimes
-    if start_hour < 12: # we begin with the corrent day for z00 and z06
+    if start_hour < 12: # we begin with the current day for z00 and z06
         leadtime = 9 - utc_offset - start_hour
     else:
         leadtime = 9 - utc_offset - start_hour + 24
@@ -76,7 +77,7 @@ else:
     leadtime_original = leadtime
 
 
-while leadtime < leadtime_original + 2:
+while leadtime < leadtime_original + 2:  # + 2 for Raspberry!
 # required data is Temperature
     forecast_t = ekd.from_source(
         "meteoswiss-opendata",
