@@ -57,6 +57,7 @@ if datei_pfad.is_file():
     wind_speed = np.load(f"{path}wind_speed_icon_ch2_{start_date}.npy")
     wind_direction = np.load(f"{path}wind_direction_icon_ch2_{start_date}.npy")
     radiation = np.load(f"{path}radiation_icon_ch2_{start_date}.npy")
+    cloud_cover = np.load(f"{path}cloudcover_icon_ch2_{start_date}.npy")
     leadtime = leadtime_original # we are in an ongoing load
 else:
     # set everything up for a new, fresh day :-)
@@ -65,7 +66,8 @@ else:
     dewpoint = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
     wind_speed = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
     wind_direction = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
-    radiation = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
+    radiation = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
+    cloud_cover = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
     new_day_flag = True
 
     # calculating the leadtimes
@@ -75,7 +77,6 @@ else:
         leadtime = 9 - utc_offset - start_hour + 24
     print(f'Start hour: z{start_hour}, leadtime: {leadtime}')
     leadtime_original = leadtime
-
 
 while leadtime < leadtime_original + 2:  # + 2 for Raspberry!
 # required data is Temperature
@@ -161,6 +162,38 @@ while leadtime < leadtime_original + 2:  # + 2 for Raspberry!
     init_time = dataset_r["forecast_reference_time"].values
     print("My Radiation: ", dataset_r)
     print(f'Init Time Radiation: {init_time}, Leadtime: {leadtime}')
+
+    # Cloudcover High 400hPa %
+    forecast_cch = ekd.from_source(
+                "meteoswiss-opendata",
+                collection="ogd-forecasting-icon-ch2",
+                variable="CLCH",
+                perturbed=False,
+                ref_time="latest",
+                lead_time=[
+                    dt.timedelta(hours=leadtime)
+                ],
+            )
+            
+    dataset_cch = forecast_cch.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
+    init_time = dataset_r["forecast_reference_time"].values
+    print("cloud cover high: ", dataset_cch)
+
+    # Cloudcover Mid 800-400hPa %
+    forecast_ccm = ekd.from_source(
+                "meteoswiss-opendata",
+                collection="ogd-forecasting-icon-ch2",
+                variable="CLCM",
+                perturbed=False,
+                ref_time="latest",
+                lead_time=[
+                    dt.timedelta(hours=leadtime)
+                ],
+            )
+            
+    dataset_ccm = forecast_ccm.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
+    init_time = dataset_r["forecast_reference_time"].values
+    print("cloud cover mid: ", dataset_ccm)
     
     # now get the vertical levels from the ICON-CH2 dataset
     vertical_ch2 = ekd.from_source(
@@ -192,6 +225,10 @@ while leadtime < leadtime_original + 2:  # + 2 for Raspberry!
         # Measures without levels
         radiation_w = dataset_r["avg_sdswrf"].sel(values=next_index)
         radiation[loc, leadtime + load_hour] = radiation_w.values.item()
+
+        # Cloud-Cover High
+        cloud_h = dataset_cch["ccl"].sel(values=next_index)
+        cloud_cover[loc, leadtime + load_hour] = cloud_h.values.item()
     
         level = 1
         while level <= 80:
@@ -235,6 +272,7 @@ np.save(f"{path}dewpoint_icon_ch2_{start_date}.npy", dewpoint)
 np.save(f"{path}wind_speed_icon_ch2_{start_date}.npy", wind_speed)
 np.save(f"{path}wind_direction_icon_ch2_{start_date}.npy", wind_direction)
 np.save(f"{path}radiation_icon_ch2_{start_date}.npy", radiation)
+np.save(f"{path}cloudcover_icon_ch2_{start_date}.npy", cloud_cover)
 
 load_status = {
     "status": "ok",
