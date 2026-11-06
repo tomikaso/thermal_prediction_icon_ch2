@@ -78,7 +78,7 @@ else:
     print(f'Start hour: z{start_hour}, leadtime: {leadtime}')
     leadtime_original = leadtime
 
-while leadtime < leadtime_original + 2:  # + 2 for Raspberry!
+while leadtime < leadtime_original + 12:  # the new Raspberry can!
 # required data is Temperature
     forecast_t = ekd.from_source(
         "meteoswiss-opendata",
@@ -194,6 +194,22 @@ while leadtime < leadtime_original + 2:  # + 2 for Raspberry!
     dataset_ccm = forecast_ccm.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
     init_time = dataset_r["forecast_reference_time"].values
     print("cloud cover mid: ", dataset_ccm)
+
+    # Cloudcover low ground to 800hPa %
+    forecast_ccl = ekd.from_source(
+                "meteoswiss-opendata",
+                collection="ogd-forecasting-icon-ch2",
+                variable="CLCL",
+                perturbed=False,
+                ref_time="latest",
+                lead_time=[
+                    dt.timedelta(hours=leadtime)
+                ],
+            )
+            
+    dataset_ccl = forecast_ccl.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
+    init_time = dataset_r["forecast_reference_time"].values
+    print("cloud cover low: ", dataset_ccl)
     
     # now get the vertical levels from the ICON-CH2 dataset
     vertical_ch2 = ekd.from_source(
@@ -228,7 +244,11 @@ while leadtime < leadtime_original + 2:  # + 2 for Raspberry!
 
         # Cloud-Cover High
         cloud_h = dataset_cch["ccl"].sel(values=next_index)
-        cloud_cover[loc, leadtime + load_hour] = cloud_h.values.item()
+        cloud_m = dataset_ccm["ccl"].sel(values=next_index)
+        cloud_l = dataset_ccm["ccl"].sel(values=next_index)
+        cloud_cover[loc, leadtime + load_hour] = round ((cloud_h.values.item() + 6) / 12.5) * 100
+        cloud_cover[loc, leadtime + load_hour] += round ((cloud_m.values.item() + 6) / 12.5) * 10
+        cloud_cover[loc, leadtime + load_hour] += round ((cloud_l.values.item() + 6) / 12.5) * 1
     
         level = 1
         while level <= 80:
