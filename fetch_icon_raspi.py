@@ -160,7 +160,6 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
         
     dataset_r = forecast_r.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
     init_time = dataset_r["forecast_reference_time"].values
-    print("My Radiation: ", dataset_r)
     print(f'Init Time Radiation: {init_time}, Leadtime: {leadtime}')
 
     # Cloudcover High 400hPa %
@@ -177,7 +176,7 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
             
     dataset_cch = forecast_cch.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
     init_time = dataset_r["forecast_reference_time"].values
-    print("cloud cover high: ", dataset_cch)
+    print(f'cloud cover high: {init_time}, Leadtime: {leadtime}') 
 
     # Cloudcover Mid 800-400hPa %
     forecast_ccm = ekd.from_source(
@@ -193,7 +192,7 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
             
     dataset_ccm = forecast_ccm.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
     init_time = dataset_r["forecast_reference_time"].values
-    print("cloud cover mid: ", dataset_ccm)
+    print(f'cloud cover mid: {init_time}, Leadtime: {leadtime}') 
 
     # Cloudcover low ground to 800hPa %
     forecast_ccl = ekd.from_source(
@@ -209,7 +208,7 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
             
     dataset_ccl = forecast_ccl.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
     init_time = dataset_r["forecast_reference_time"].values
-    print("cloud cover low: ", dataset_ccl)
+    print(f'cloud cover low: {init_time}, Leadtime: {leadtime}') 
     
     # now get the vertical levels from the ICON-CH2 dataset
     vertical_ch2 = ekd.from_source(
@@ -246,10 +245,10 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
         cloud_h = dataset_cch["ccl"].sel(values=next_index)
         cloud_m = dataset_ccm["ccl"].sel(values=next_index)
         cloud_l = dataset_ccm["ccl"].sel(values=next_index)
-        cloud_cover[loc, leadtime + load_hour] = round ((cloud_h.values.item() + 6) / 12.5) * 100
-        cloud_cover[loc, leadtime + load_hour] += round ((cloud_m.values.item() + 6) / 12.5) * 10
-        cloud_cover[loc, leadtime + load_hour] += round ((cloud_l.values.item() + 6) / 12.5) * 1
-    
+        cloud_cover[loc, leadtime + load_hour + utc_offset] = round ((cloud_h.values.item() + 6) / 12.5) * 100
+        cloud_cover[loc, leadtime + load_hour + utc_offset] += round ((cloud_m.values.item() + 6) / 12.5) * 10
+        cloud_cover[loc, leadtime + load_hour + utc_offset] += round ((cloud_l.values.item() + 6) / 12.5) * 1
+        print('Cloud-Cover', cloud_cover)
         level = 1
         while level <= 80:
             desired_level: int = level
