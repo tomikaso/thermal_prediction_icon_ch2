@@ -1,0 +1,754 @@
+<head>
+    <meta charset="utf-8">
+</head>
+<style>
+.km {
+  font-size: 18px;
+  color: #444;
+}
+.km:hover {
+  text-decoration: none;
+  color: #888;
+}
+.overview {
+  position: relative;
+    width: 100%;
+  padding-top: 59%;
+  background-color: lightgreen;
+  background-image: url('swiss_outline_gr.png');
+  background-size: 100%;
+  background-repeat: no-repeat;
+  margin: 0px;
+  border-radius: 0px;
+}
+.thermal0 {
+  position: absolute;
+  left: 58%;
+  top:  23%;
+  width: 36px;
+  height: 36px;
+  background-color: lightgreen;
+  margin: 0px;
+  border-radius: 25px;
+  cursor: pointer;
+  }
+.thermal0:hover {border-color: red;}
+.thermal1 {
+  position: absolute;
+  left: 55%;
+  top:  74%;
+  width: 36px;
+  height: 36px;
+  background-color: lightgreen;
+  margin: 0px;
+  border-radius: 25px;
+  cursor: pointer;
+ }
+ .thermal1:hover {border-color: red;}
+.thermal2 {
+  position: absolute;
+  left: 63%;
+  top:  31%;
+  width: 36px;
+  height: 36px;
+  background-color: lightgreen;
+  margin: 0px;
+  border-radius: 25px;
+  cursor: pointer;
+}
+.thermal2:hover {border-color: red;}
+.thermal3 {
+  position: absolute;
+  left: 73%;
+  top:  40%;
+  width: 36px;
+  height: 36px;
+  background-color: lightgreen;
+  margin: 0px;
+  border-radius: 25px;
+  cursor: pointer;
+ }
+.thermal3:hover {border-color: red;}
+.thermal4 {
+  position: absolute;
+  left: 31%;
+  top:  24%;
+  width: 36px;
+  height: 36px;
+  background-color: lightgreen;
+  margin: 0px;
+  border-radius: 25px;
+  cursor: pointer;
+ }
+.thermal4:hover {border-color: red;}
+.thermal5 {
+  position: absolute;
+  left: 83%;
+  top:  50%;
+  width: 36px;
+  height: 36px;
+  background-color: lightgreen;
+  margin: 0px;
+  border-radius: 25px;
+  cursor: pointer;
+}
+.thermal5:hover {border-color: red;}
+.thermal6 {
+  position: absolute;
+  left: 39%;
+  top:  65%;
+  width: 36px;
+  height: 36px;
+  background-color: lightgreen;
+  margin: 0px;
+  border-radius: 25px;
+  cursor: pointer;
+}
+.thermal6:hover {border-color: red;}
+.thermal7 {
+  position: absolute;
+  left: 32%;
+  top:  50%;
+  width: 36px;
+  height: 36px;
+  background-color: lightgreen;
+  margin: 0px;
+  border-radius: 25px;
+  cursor: pointer;
+}
+.thermal7:hover {border-color: red;}
+.thermal8 {
+  position: absolute;
+  left: 60%;
+  top:  40%;
+  width: 36px;
+  height: 36px;
+  background-color: lightgreen;
+  margin: 0px;
+  border-radius: 25px;
+  cursor: pointer;
+}
+.thermal8:hover {border-color: red;}
+.thermal9 {
+  position: absolute;
+  left: 57%;
+  top:  61%;
+  width: 36px;
+  height: 36px;
+  background-color: lightgreen;
+  margin: 0px;
+  border-radius: 25px;
+  cursor: pointer;
+}
+.thermal9:hover {border-color: red;}
+.button1 {  width: 84px;   height: 36px; background-color: #EEF6FA;  margin: 4px;
+   			border-radius: 5px;   font-size: 14px; color: #314483; cursor: pointer;
+   			}
+.button1:hover {color: #b00;}
+.active_button {width: 84px;  height: 36px;  border-color: #b00;   margin: 4px;
+ 			border-radius: 5px; font-size: 14px; color: #b00;}
+.thermal_active {border-color: #b00; color: #b00;}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 17px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 17px;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 13px;
+  width: 13px;
+  left: 2px;
+  bottom: 2px;
+  border-radius: 50%;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #b00;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px; #b00;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(13px);
+  -ms-transform: translateX(13px);
+  transform: translateX(13px);
+}
+.wind_font {
+  font-size: 14px;
+  color: dimgrey;
+  padding: 2px 2px 8px 2px;
+}
+.layout-container {display: flex; align-items: center; justify-content: center; gap: 20px; 
+  margin: 50px auto; max-width: 1000px;
+}
+table, td, th, a, p {font-size: 10pt; padding: 4pt;} 
+tr { background-color: aliceblue;} tr:not(:first-child):hover {background-color: skyblue;} 
+</style>
+<body onload="load_potential()">
+
+<script>
+   var day;
+   let loca = 0;
+   var startgrid;
+   var potarray = new Array();
+   var thermal_wind_sw = "thermal";
+   const weekday = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag", "Montag","Dienstag","Mittwoch","Donnerstag"];
+   const grids = ["Scheidegg", "Locarno", "Hüsliberg", "Pany", "Solothurn", "Scuol", "Fiesch", "Niesen", "Braunwald-Gumen", "Cari"];
+   const models = ["ICON-D2", "ICON-D2", "ICON-EU", "ICON-EU", "ICON-EU" , "ICON-EU"];
+    const wind_color = ["limegreen", "springgreen", "lawngreen", "greenyellow", "yellow", "gold", "orange", "orangered", "tomato", "lightcoral", "indianred", "orchid", "darkorchid"];
+   const d = new Date();
+   var forecast = {};
+   function datehour() {return d.getHours() + 100 * d.getDate() + 10000 * d.getMonth();}
+   async function load_potential(){document.getElementById("display_temp").innerHTML = "<h3>loading...</h3>";
+                      let x = await fetch('http://localhost:8000/thermal_forecast.json');
+                      forecast = await x.json();
+                      document.getElementById("display_temp").innerHTML = forecast[0][0][12].cloudcover;
+                      setday();
+                      set_active_location(0);
+                      show_forecast();
+                      setTimeout(function (){changeColor(0)}, 1000);
+                      }
+   function setday(){day = 0; startgrid = "Scheidegg";
+                     document.getElementById("my-div0").innerHTML = "Heute";
+                     for (let j = 1; j <= 4; j++) {
+                          document.getElementById("my-div" + j).innerHTML = weekday[d.getDay() + j];}
+}
+function changeColor(i) {
+    for (let l = 0; l <= 9; l++) {
+        document.getElementById("thermal" + l).style.backgroundColor = col(forecast[0][l][12].potential);
+        document.getElementById("thermal" + l).innerHTML = "<a class='km'>" + forecast[0][l][12].potential + "</a>";
+    }
+    day = i;
+    document.getElementById("day_indicator").innerHTML = models[day];
+    for (let j = 0; j <= 4; j++) {
+        document.getElementById("my-div" + j).className = "button1";
+    }
+    document.getElementById("my-div" + day).className = "active_button";
+    show_forecast();
+    clear_table();
+    load_data();
+}
+function arrow_svg(angle){
+      var pi180 = Math.PI / 180;
+      let r = 5
+      let padd = 1
+      let ax = r + padd - Math.sin(angle * pi180) * r;
+      let ay = r + padd + Math.cos(angle * pi180) * r;
+      let a2x = r + padd - Math.sin((angle + 180) * pi180) * r * 0.2;
+      let a2y = r + padd + Math.cos((angle + 180) * pi180) * r * 0.2;
+      let bx = r + padd - Math.sin((angle + 130) * pi180) * r * 0.8;
+      let by = r + padd + Math.cos((angle + 130) * pi180) * r * 0.8;
+      let cx = r + padd - Math.sin((angle - 130) * pi180) * r * 0.8;
+      let cy = r + padd + Math.cos((angle - 130) * pi180) * r * 0.8;
+      return `<svg height="10" width="10" xmlns=http://www.w3.org/2000/svg><polygon points="${cx},${cy} ${ax},${ay} ${bx},${by} ${a2x},${a2y}" fill = "grey"></svg>`}
+function col(distst){
+          		var dist = parseInt(distst);
+                if (dist > 250 ){dist = 250;}
+          		dist = dist * 0.8;
+                let r = 255 - dist;
+              let fac = (15625 - (dist - 125)**2) / 260
+                return `rgba(${r}, ${r + fac}, ${r - fac}, 1)`
+                }
+    function show_grid(n) {startgrid = grids[n]; show_forecast(); set_active_location(n); loca = n;
+                           clear_table(); load_data();}
+    function set_active_location(loc){
+             for (let l = 0; l <= 9; l++) {document.getElementById("thermal" + l).className = "thermal" + l;}
+             document.getElementById("thermal" + loc).className   += " thermal_active";}
+
+    function show_forecast() {document.getElementById("display_temp").innerHTML = "<h3>" + startgrid +
+         " Day-" + day + "</h3><img src='forecast" + startgrid + day + ".png?" + datehour() + "'>" ;}
+
+function clear_table(){ for (let t = 10; t<=20; t++)
+						{ for (let h = 800; h<=4200; h=h+200)
+							{
+						document.getElementById(h + "-" + t).innerHTML = "";
+						document.getElementById(h + "-" + t).style.backgroundColor = "white";
+							}
+						}
+					}
+function liftcol(lift){
+          		var l = parseFloat(lift);
+                if (l > 5 ){l = 5;}
+          		l = l * 30;
+                let r = 255 - l;
+                let fac = (15625 - (l - 125)**2) / 260;
+                return `rgba(${r}, ${r + fac}, ${r - fac}, 1)`
+                }
+async function load_thermal_model()
+  {
+  let x = await fetch("http://localhost:63342/Thermal-prediction-Alp-Scheidegg/thermal_data_multi.txt?"+ datehour());
+  let y = await x.text();
+  thermlist = y.split(',');
+  let adr = "invalid";
+  let adr_flag = 0;
+  document.getElementById("b2").innerHTML = "Thermik-Modell: " + startgrid + ", " + weekday[d.getDay() + day];
+  clear_table();
+  for (let t in thermlist)
+    {
+	if(thermlist[t].substring(0,3) == "LOC" && thermlist[t].substring(7,8) == day && thermlist[t].substring(3,4) == loca )
+		{lt = thermlist[t].substring(10,12); height = thermlist[t].substring(13,17); adr = height + "-" + lt; adr_flag = 1;}
+	else
+		{
+		if (adr_flag == 1)
+			{
+			adr_flag = 0;
+			if(isNaN(thermlist[t]))
+				{
+				svg_adr = thermlist[t] + '.svg'
+				document.getElementById(adr).innerHTML = "<img src='" + svg_adr + "'>";
+				}
+			    else
+				{
+				document.getElementById(adr).innerHTML = thermlist[t];
+				document.getElementById(adr).style.backgroundColor = liftcol(thermlist[t]);
+				}
+			}
+		}
+	 }
+  }
+function new_day(){day ++; if(day > 4){day=0;} document.getElementById("b2").innerHTML = day + "+"; clear_table(); load_thermal_model(); show_forecast();}
+async function load_wind()
+  {
+  let w = await fetch("http://localhost:63342/Thermal-prediction-Alp-Scheidegg/wind_data_multi.txt?"+ datehour());
+  let y = await w.text();
+  windlist = y.split(',');
+  let adr = "invalid";
+  let adr_flag = 0;
+  document.getElementById("b2").innerHTML = "Wind-Daten: " + startgrid + ", " + weekday[d.getDay() + day];
+  clear_table();
+  for (let t in windlist)
+    {
+	if(windlist[t].substring(0,3) == "LOC" && windlist[t].substring(7,8) == day && windlist[t].substring(3,4) == loca )
+		{lt = windlist[t].substring(10,12); height = windlist[t].substring(13,17); adr = height + "-" + lt; adr_flag = 1;}
+	else
+		{
+		if (adr_flag == 1)
+			{
+			adr_flag = 0;
+			wind_speed = parseInt(windlist[t].substring(0,3));
+			wind_angle = parseInt(windlist[t].substring(6,9));
+			document.getElementById(adr).innerHTML = arrow_svg(wind_angle) + "<span class='wind_font'>" + wind_speed + "</span>";
+			document.getElementById(adr).style.backgroundColor = wind_color[Math.min(Math.floor(wind_speed/5), 12)];
+			}
+		}
+	}
+  }
+  function wind_panel() {
+  for (let i = 0; i < 13; i++)
+    {
+     let panel = i*5 + " - " + (i*5+5)
+     document.getElementById(i).innerHTML = "<span class='wind_font'>" + panel + "</span>";
+     document.getElementById(i).style.backgroundColor = wind_color[Math.min(Math.floor(i), 12)];
+     }
+  }
+function display_wind() {
+    thermal_wind_switch = document.getElementById("wind_therm_chk").checked;
+    if (thermal_wind_switch) {
+        thermal_wind_sw = "thermal";
+    } else {
+        thermal_wind_sw = "wind";
+    }
+    document.getElementById("t_wind").innerHTML = "  Switch:" + thermal_wind_switch + " " + thermal_wind_sw;
+    load_data();
+}
+function load_data()
+    {clear_table(); wind_panel();
+    if (thermal_wind_sw == "thermal")
+        {load_thermal_model();}
+        else {load_wind();}
+        document.getElementById("t_wind").innerHTML = "  Load Data:" + thermal_wind_sw;
+    }
+function show_ema(n) {var fd = loca.toString().padStart(2, '0');
+  document.getElementById("ema-svg").src = `emagrams/emagram_loc${fd}_d1lt${n}.svg`;}
+</script>
+<div class="overview" id="overview">
+    <button class="thermal1" id="thermal1" onclick="show_grid(1)"><a class="km">LO</a></button>
+    <button class="thermal8" id="thermal8" onclick="show_grid(8)"><a class="km">BR</a></button>
+    <button class="thermal2" id="thermal2" onclick="show_grid(2)"><a class="km">HÜ</a></button>
+    <button class="thermal0" id="thermal0" onclick="show_grid(0)"><a class="km">AS</a></button>
+    <button class="thermal3" id="thermal3" onclick="show_grid(3)"><a class="km">PY</a></button>
+    <button class="thermal4" id="thermal4" onclick="show_grid(4)"><a class="km">SO</a></button>
+    <button class="thermal5" id="thermal5" onclick="show_grid(5)"><a class="km">SC</a></button>
+    <button class="thermal6" id="thermal6" onclick="show_grid(6)"><a class="km">FI</a></button>
+    <button class="thermal7" id="thermal7" onclick="show_grid(7)"><a class="km">NI</a></button>
+    <button class="thermal9" id="thermal9" onclick="show_grid(9)"><a class="km">CA</a></button>
+</div>
+<button class="button1" id="my-div0" onclick="changeColor(0)">Heute</button>
+<button class="button1" id="my-div1" onclick="changeColor(1)">Tag 1</button>
+<button class="button1" id="my-div2" onclick="changeColor(2)">Tag 2</button>
+<button class="button1" id="my-div3" onclick="changeColor(3)">Tag 3</button>
+<button class="button1" id="my-div4" onclick="changeColor(4)">Tag 4</button>
+<button class="button1" id="day_indicator">Today</button>
+
+<div class="layout-container"><img id="ema-svg" src="emagrams/emagram_loc00_d0lt10.svg">
+  <table style="width:550px">
+    <tr><th>Zeit<br>LT</th><th>Wind<br>km/h</th><th>Sonne<br>%</th><th>Wolken<br>l-m-h</th><th>Lift<br>m/s</th><th>Base/Top<br>m</th></tr>
+    <tr onmouseover="show_ema(10)"><td>10:00</td><td></td><td>3</td><td>8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(11)"><td>11:00</td><td></td><td>4</td><td>8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(12)"><td>12:00</td><td></td><td>5</td><td>8-8-4</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(13)"><td>13:00</td><td></td><td>5</td><td>8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(14)"><td>14:00</td><td></td><td>5</td><td>8-8-1</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(15)"><td>15:00</td><td></td><td>5</td><td>8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(16)"><td>16:00</td><td></td><td>5</td><td>8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(17)"><td>17:00</td><td></td><td>5</td><td>8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(18)"><td>18:00</td><td></td><td>5</td><td>8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(19)"><td>19:00</td><td></td><td>4</td><td>8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(20)"><td>20:00</td><td></td><td>0</td><td>8-8-0</td><td></td><td></td></tr>
+  </table>
+</div>
+
+<div id="display_temp"><img src="/images/thomaskamps/multitherm/forecastScheidegg0.png" ></div>
+<div>
+    <h3 id="b2">Thermik-Modell</h3>
+    <span>Wind  </span><label class="switch" id="wind_therm_select" onclick="display_wind()" >
+    <input type="checkbox" id="wind_therm_chk" checked><span class="slider"></span></label><span>  Thermik</span>
+    <span id="t_wind">  switch</span>
+    <table>
+        <tr>
+            <th>Cloud</th>
+            <td id="4200-10"></td>
+            <td id="4200-11"></td>
+            <td id="4200-12"></td>
+            <td id="4200-13"></td>
+            <td id="4200-14"></td>
+            <td id="4200-15"></td>
+            <td id="4200-16"></td>
+            <td id="4200-17"></td>
+            <td id="4200-18"></td>
+            <td id="4200-19"></td>
+            <td id="4200-20"></td>
+        </tr>
+        <tr>
+            <th>4'000</th>
+            <td id="4000-10"></td>
+            <td id="4000-11"></td>
+            <td id="4000-12"></td>
+            <td id="4000-13"></td>
+            <td id="4000-14"></td>
+            <td id="4000-15"></td>
+            <td id="4000-16"></td>
+            <td id="4000-17"></td>
+            <td id="4000-18"></td>
+            <td id="4000-19"></td>
+            <td id="4000-20"></td>
+        </tr>
+        <tr>
+            <th>3'800</th>
+            <td id="3800-10"></td>
+            <td id="3800-11"></td>
+            <td id="3800-12"></td>
+            <td id="3800-13"></td>
+            <td id="3800-14"></td>
+            <td id="3800-15"></td>
+            <td id="3800-16"></td>
+            <td id="3800-17"></td>
+            <td id="3800-18"></td>
+            <td id="3800-19"></td>
+            <td id="3800-20"></td>
+        </tr>
+        <tr>
+            <th>3'600</th>
+            <td id="3600-10"></td>
+            <td id="3600-11"></td>
+            <td id="3600-12"></td>
+            <td id="3600-13"></td>
+            <td id="3600-14"></td>
+            <td id="3600-15"></td>
+            <td id="3600-16"></td>
+            <td id="3600-17"></td>
+            <td id="3600-18"></td>
+            <td id="3600-19"></td>
+            <td id="3600-20"></td>
+        </tr>
+        <tr>
+            <th>3'400</th>
+            <td id="3400-10"></td>
+            <td id="3400-11"></td>
+            <td id="3400-12"></td>
+            <td id="3400-13"></td>
+            <td id="3400-14"></td>
+            <td id="3400-15"></td>
+            <td id="3400-16"></td>
+            <td id="3400-17"></td>
+            <td id="3400-18"></td>
+            <td id="3400-19"></td>
+            <td id="3400-20"></td>
+        </tr>
+        <tr>
+            <th>3'200</th>
+            <td id="3200-10"></td>
+            <td id="3200-11"></td>
+            <td id="3200-12"></td>
+            <td id="3200-13"></td>
+            <td id="3200-14"></td>
+            <td id="3200-15"></td>
+            <td id="3200-16"></td>
+            <td id="3200-17"></td>
+            <td id="3200-18"></td>
+            <td id="3200-19"></td>
+            <td id="3200-20"></td>
+        </tr>
+        <tr>
+            <th>3'000</th>
+            <td id="3000-10"></td>
+            <td id="3000-11"></td>
+            <td id="3000-12"></td>
+            <td id="3000-13"></td>
+            <td id="3000-14"></td>
+            <td id="3000-15"></td>
+            <td id="3000-16"></td>
+            <td id="3000-17"></td>
+            <td id="3000-18"></td>
+            <td id="3000-19"></td>
+            <td id="3000-20"></td>
+        </tr>
+        <tr>
+            <th>2'800</th>
+            <td id="2800-10"></td>
+            <td id="2800-11"></td>
+            <td id="2800-12"></td>
+            <td id="2800-13"></td>
+            <td id="2800-14"></td>
+            <td id="2800-15"></td>
+            <td id="2800-16"></td>
+            <td id="2800-17"></td>
+            <td id="2800-18"></td>
+            <td id="2800-19"></td>
+            <td id="2800-20"></td>
+        </tr>
+        <tr>
+            <th>2'600</th>
+            <td id="2600-10"></td>
+            <td id="2600-11"></td>
+            <td id="2600-12"></td>
+            <td id="2600-13"></td>
+            <td id="2600-14"></td>
+            <td id="2600-15"></td>
+            <td id="2600-16"></td>
+            <td id="2600-17"></td>
+            <td id="2600-18"></td>
+            <td id="2600-19"></td>
+            <td id="2600-20"></td>
+        </tr>
+        <tr>
+            <th>2'400</th>
+            <td id="2400-10"></td>
+            <td id="2400-11"></td>
+            <td id="2400-12"></td>
+            <td id="2400-13"></td>
+            <td id="2400-14"></td>
+            <td id="2400-15"></td>
+            <td id="2400-16"></td>
+            <td id="2400-17"></td>
+            <td id="2400-18"></td>
+            <td id="2400-19"></td>
+            <td id="2400-20"></td>
+        </tr>
+        <tr>
+            <th>2'200</th>
+            <td id="2200-10"></td>
+            <td id="2200-11"></td>
+            <td id="2200-12"></td>
+            <td id="2200-13"></td>
+            <td id="2200-14"></td>
+            <td id="2200-15"></td>
+            <td id="2200-16"></td>
+            <td id="2200-17"></td>
+            <td id="2200-18"></td>
+            <td id="2200-19"></td>
+            <td id="2200-20"></td>
+        </tr>
+        <tr>
+            <th>2'000</th>
+            <td id="2000-10"></td>
+            <td id="2000-11"></td>
+            <td id="2000-12"></td>
+            <td id="2000-13"></td>
+            <td id="2000-14"></td>
+            <td id="2000-15"></td>
+            <td id="2000-16"></td>
+            <td id="2000-17"></td>
+            <td id="2000-18"></td>
+            <td id="2000-19"></td>
+            <td id="2000-20"></td>
+        </tr>
+        <tr>
+            <th>1'800</th>
+            <td id="1800-10"></td>
+            <td id="1800-11"></td>
+            <td id="1800-12"></td>
+            <td id="1800-13"></td>
+            <td id="1800-14"></td>
+            <td id="1800-15"></td>
+            <td id="1800-16"></td>
+            <td id="1800-17"></td>
+            <td id="1800-18"></td>
+            <td id="1800-19"></td>
+            <td id="1800-20"></td>
+        </tr>
+        <tr>
+            <th>1'600</th>
+            <td id="1600-10"></td>
+            <td id="1600-11"></td>
+            <td id="1600-12"></td>
+            <td id="1600-13"></td>
+            <td id="1600-14"></td>
+            <td id="1600-15"></td>
+            <td id="1600-16"></td>
+            <td id="1600-17"></td>
+            <td id="1600-18"></td>
+            <td id="1600-19"></td>
+            <td id="1600-20"></td>
+        </tr>
+        <tr>
+            <th>1'400</th>
+            <td id="1400-10"></td>
+            <td id="1400-11"></td>
+            <td id="1400-12"></td>
+            <td id="1400-13"></td>
+            <td id="1400-14"></td>
+            <td id="1400-15"></td>
+            <td id="1400-16"></td>
+            <td id="1400-17"></td>
+            <td id="1400-18"></td>
+            <td id="1400-19"></td>
+            <td id="1400-20"></td>
+        </tr>
+        <tr>
+            <th>1'200</th>
+            <td id="1200-10"></td>
+            <td id="1200-11"></td>
+            <td id="1200-12"></td>
+            <td id="1200-13"></td>
+            <td id="1200-14"></td>
+            <td id="1200-15"></td>
+            <td id="1200-16"></td>
+            <td id="1200-17"></td>
+            <td id="1200-18"></td>
+            <td id="1200-19"></td>
+            <td id="1200-20"></td>
+        </tr>
+        <tr>
+            <th>1'000</th>
+            <td id="1000-10"></td>
+            <td id="1000-11"></td>
+            <td id="1000-12"></td>
+            <td id="1000-13"></td>
+            <td id="1000-14"></td>
+            <td id="1000-15"></td>
+            <td id="1000-16"></td>
+            <td id="1000-17"></td>
+            <td id="1000-18"></td>
+            <td id="1000-19"></td>
+            <td id="1000-20"></td>
+        </tr>
+        <tr>
+            <th>800</th>
+            <td id="800-10"></td>
+            <td id="800-11"></td>
+            <td id="800-12"></td>
+            <td id="800-13"></td>
+            <td id="800-14"></td>
+            <td id="800-15"></td>
+            <td id="800-16"></td>
+            <td id="800-17"></td>
+            <td id="800-18"></td>
+            <td id="800-19"></td>
+            <td id="800-20"></td>
+        </tr>
+        <tr>
+            <th>H/Lt</th>
+            <th> 10h </th>
+            <th> 11h </th>
+            <th> 12h </th>
+            <th> 13h </th>
+            <th> 14h </th>
+            <th> 15h </th>
+            <th> 16h </th>
+            <th> 17h </th>
+            <th> 18h </th>
+            <th> 19h </th>
+            <th> 20h </th>
+        </tr>
+    </table>
+</div>
+<table><tr style="height:60px">
+    <td id = "0">0-5</td>
+    <td id = "1">6-10</td>
+    <td id = "2">11-15</td>
+    <td id = "3">16-20</td>
+    <td id = "4">21-25</td>
+    <td id = "5">26-30</td>
+    <td id = "6">0-5</td>
+    <td id = "7">6-10</td>
+    <td id = "8">11-15</td>
+    <td id = "9">26-30</td>
+    <td id = "10">0-5</td>
+    <td id = "11">6-10</td>
+    <td id = "12">11-15</td>
+</tr>
+</table>
+<script>
+const month = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+ let an = 20;
+ let myDate = new Date();
+function getSolarDeclination(date) {
+    // 1. Calculate the day of the year (1-366)
+    const start = new Date(date.getFullYear(), 0, 0);
+	const wald_zh_long = 47.28;
+    const diff = date - start;
+    const oneDay = 1000 * 60 * 60 * 24;
+    const dayOfYear = Math.floor(diff / oneDay);
+    const declination = 90 - wald_zh_long + 23.45 * Math.sin((360 / 365) * (dayOfYear + 284) * (Math.PI / 180));
+	const daylength = 12.2 - 3.74 * Math.cos(dayOfYear / 360 * 6.28);
+    return declination;
+	}
+function showSun_plus() {myDate.setDate(myDate.getDate() + 15); document.getElementById("sun_diagram").innerHTML = sun_svg(myDate);}
+function sun_svg(date){
+	  angle = getSolarDeclination(date)
+      var pi180 = Math.PI / 180;
+	  let t = Math.round(angle).toString() + "°";
+      let r = 120;
+      let osx = 140;
+	  let osy = 140;
+      let ax = osx + Math.cos(angle * pi180) * r;
+      let ay = osy - Math.sin(angle * pi180) * r;
+	  let bx = osx - 60 / Math.tan(angle * pi180);
+	  let month_name = month[myDate.getMonth()];
+	  let month_day = myDate.getDate();
+      return `<rect width="320" height="195" x="0" y="0" rx="10" ry="10" fill="aqua" /><polygon points="${bx},199 140,140 140,199" fill="gainsboro" />
+	  <line x1="${ax}" y1="${ay}" x2="${bx}" y2="198" style="stroke:orange;stroke-width:2" />
+	  <circle r="16" cx="${ax}" cy="${ay}" fill="yellow" /><text x="${ax - 5}" y="${ay + 3}" fill="pink" stroke="blue" font-size="12">${t}</text>
+	  <text x="20" y="20" fill="pink" stroke="blue" font-size="12">${month_day}. ${month_name}</text><text x="20" y="36" fill="pink" stroke="blue" font-size="12">Wald ZH</text>
+	  <polygon points="0,199 0,150 30,180 55,190 90,185 110,180 140,140 160,180 240,190 280,170 319,190 319,199" fill="grey" />`}
+ setTimeout(function (){document.getElementById("sun_diagram").innerHTML = sun_svg(myDate);}, 200);
+</script>
+<svg height="200" width="320" id="sun_diagram" xmlns="http://www.w3.org/2000/svg" onclick="showSun_plus()">
+    <circle r="16" cx="150" cy="40" fill="yellow" />
+</svg>

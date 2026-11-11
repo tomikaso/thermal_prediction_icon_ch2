@@ -25,13 +25,16 @@ def calculate_dew_point(T_celsius, q, h):
     Td = (243.12 * alpha) / (17.62 - alpha)
     return Td
 
-with open("load_status.json", "r") as file:
+# sytem_path = '/home/meteoman/icon_ch2/'
+sytem_path = ''  # activate for WSL
+
+with open(f"{sytem_path}load_status.json", "r") as file:
     loaded_data = json.load(file)
 print(f"Last Leadtime: {loaded_data["leadtime"]}")
 leadtime_original = loaded_data["leadtime"]
 
 # basic parameters
-path = "data/"
+path = sytem_path + "data/"
 load_hour = 0
 leadtime = 0
 number_of_locations = locations.max_locations
@@ -58,6 +61,7 @@ if datei_pfad.is_file():
     wind_direction = np.load(f"{path}wind_direction_icon_ch2_{start_date}.npy")
     radiation = np.load(f"{path}radiation_icon_ch2_{start_date}.npy")
     cloud_cover = np.load(f"{path}cloudcover_icon_ch2_{start_date}.npy")
+    percipitation = np.load(f"{path}percipitation_icon_ch2_{start_date}.npy")
     leadtime = leadtime_original # we are in an ongoing load
 else:
     # set everything up for a new, fresh day :-)
@@ -68,6 +72,7 @@ else:
     wind_direction = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
     radiation = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
     cloud_cover = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
+    percipitation = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
     new_day_flag = True
 
     # calculating the leadtimes
@@ -143,7 +148,6 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
     dataset_v = forecast_v.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
     load_hour = int(dataset_v["forecast_reference_time"].dt.hour[0].values) # 0, 6, 12, 18
     print(f"Ladezeit: z{load_hour}")
-    
     print(f'Init Time Dataset V-Wind: {init_time}, Leadtime: {leadtime}')
 
     # Downward direct short wave radiation flux at surface (mean over forecast time)
@@ -209,6 +213,23 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
     dataset_ccl = forecast_ccl.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
     init_time = dataset_r["forecast_reference_time"].values
     print(f'cloud cover low: {init_time}, Leadtime: {leadtime}') 
+
+    # Total percipitation
+    forecast_per = ekd.from_source(
+                "meteoswiss-opendata",
+                collection="ogd-forecasting-icon-ch2",
+                variable="TOT_PR",
+                perturbed=False,
+                ref_time="latest",
+                lead_time=[
+                    dt.timedelta(hours=leadtime)
+                ],
+            )
+            
+    dataset_per = forecast_per.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
+    init_time = dataset_r["forecast_reference_time"].values
+    print(f'total percipitaion: {init_time}, Leadtime: {leadtime}') 
+
     
     # now get the vertical levels from the ICON-CH2 dataset
     vertical_ch2 = ekd.from_source(
@@ -248,7 +269,11 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
         cloud_cover[loc, leadtime + load_hour + utc_offset] = round ((cloud_h.values.item() + 6) / 12.5) * 100
         cloud_cover[loc, leadtime + load_hour + utc_offset] += round ((cloud_m.values.item() + 6) / 12.5) * 10
         cloud_cover[loc, leadtime + load_hour + utc_offset] += round ((cloud_l.values.item() + 6) / 12.5) * 1
-        print('Cloud-Cover', cloud_cover)
+
+        # total percipitation
+        per = dataset_per["tprate"].sel(values=next_index)
+        percipitation[loc, leadtime + load_hour + utc_offset] = per.values.item() * 3600 # in l/hour
+
         level = 1
         while level <= 80:
             desired_level: int = level
@@ -292,6 +317,7 @@ np.save(f"{path}wind_speed_icon_ch2_{start_date}.npy", wind_speed)
 np.save(f"{path}wind_direction_icon_ch2_{start_date}.npy", wind_direction)
 np.save(f"{path}radiation_icon_ch2_{start_date}.npy", radiation)
 np.save(f"{path}cloudcover_icon_ch2_{start_date}.npy", cloud_cover)
+np.save(f"{path}percipitation_icon_ch2_{start_date}.npy", percipitation)
 
 load_status = {
     "status": "ok",
@@ -300,7 +326,7 @@ load_status = {
     "last_change": now.isoformat()
 }
 # write the dictionary to a file
-with open("load_status.json", "w") as file:
+with open(f"{sytem_path}load_status.json", "w") as file:
     # indent=4 makes the file human-readable (pretty-printed)
     json.dump(load_status, file, indent=4)
 print("leadtime successfully saved to disk as JSON!")

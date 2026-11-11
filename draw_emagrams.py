@@ -5,9 +5,11 @@ import math
 
 lt_time = 9
 day = lt_time // 24
-init = "20261107"
-path = "data/"
-with open("load_status.json", "r") as file:
+init = "20261110"
+# sytem_path = '/home/meteoman/icon_ch2/'
+sytem_path = ''
+path = sytem_path + "data/"
+with open(f"{sytem_path}load_status.json", "r") as file:
     load_status = json.load(file)
 print(f"Last Leadtime: {load_status["leadtime"]}, model run: z{load_status["model_run"]}")
 model_run = f'ICON-CH2, run: {init} z{load_status["model_run"]}'
@@ -36,7 +38,7 @@ def thermal_visualisation(temp):
     return cont, color
 
 def draw_wind_arrow(strength, direction, x, y):
-    wind_dot = 6
+    wind_dot = 5
     if strength < 16 and 180 < direction < 320:
         dot_color = "limegreen"
     elif strength < 30:

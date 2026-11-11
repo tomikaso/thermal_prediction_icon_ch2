@@ -4,7 +4,7 @@ import json
 import math
 
 fc_day = 0
-init = "20261107"
+init = "20261109"
 path = "data/"
 with open("load_status.json", "r") as file:
     load_status = json.load(file)
@@ -18,6 +18,30 @@ wind_speed = np.load(f'{path}wind_speed_icon_ch2_{init}.npy')
 wind_direction = np.load(f'{path}wind_direction_icon_ch2_{init}.npy')
 radiation = np.load(f'{path}radiation_icon_ch2_{init}.npy')
 cloudcover = np.load(f'{path}cloudcover_icon_ch2_{init}.npy')
+
+# preparing the JSON
+def add_entry(data_dict, day, location, hour, sun, cloudcover, lift, base, wind, pot):
+    # ensure integers
+    day = int(day)
+    location = int(location)
+    hour = int(hour)
+
+    # create a Dictionary from the parameters
+    parameters = {
+        "sun": str(sun),
+        "cloudcover": str(cloudcover),
+        "lift": str(lift),
+        "base": str(base),
+        "wind": str(wind),
+        "potential": int(pot),
+    }
+
+    # Add another set
+    data_dict.setdefault(day, {}).setdefault(location, {})[hour] = parameters
+
+# 1. Start with an empty dictionary
+thermal_data = {}
+
 
 # html definitions
 style = '<style> html {font-family: "brandon-grotesque-n7","brandon-grotesque", sans-serif; font-size: 10pt; ' \
@@ -56,10 +80,23 @@ while loc < locations.max_locations:
 
         ema_svg = f"emagram_loc{loc:02d}_d{fc_day:01d}lt{lt_time:2d}.svg"
         html_string += f'<tr onmouseover="show_ema({lt_time})"><td>{lt_time:2d}:00</td><td></td><td>{sun}</td><td>{cc}</td><td></td><td></td></tr>'
+        
+        # write to the JSON
+        add_entry(thermal_data, fc_day, loc, lt_time, sun, cc,     
+            lift="2.0",
+            base="2100",
+            wind="12 W",
+            pot = loc,
+        )
         lt_time += 1
+    
     html_string += '</table></div>' + script
     html_file = open(f"{file_location}summary_loc{loc:02d}_day{fc_day:01d}.html", "w")
     html_file.write(html_string)
     html_file.close()
     loc += 1
+# save the .json :-)
+with open(f"{file_location}thermal_forecast.json", "w", encoding="utf-8") as f:
+    json.dump(thermal_data, f, indent=4, ensure_ascii=False)
 
+print("JSON sucessfully exported!")
