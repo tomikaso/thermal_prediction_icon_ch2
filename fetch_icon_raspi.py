@@ -25,8 +25,8 @@ def calculate_dew_point(T_celsius, q, h):
     Td = (243.12 * alpha) / (17.62 - alpha)
     return Td
 
-# sytem_path = '/home/meteoman/icon_ch2/'
-sytem_path = ''  # activate for WSL
+sytem_path = '/home/meteoman/icon_ch2/'
+# sytem_path = ''  # activate for WSL
 
 with open(f"{sytem_path}load_status.json", "r") as file:
     loaded_data = json.load(file)

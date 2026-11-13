@@ -21,126 +21,60 @@
   margin: 0px;
   border-radius: 0px;
 }
+.smov {position: absolute; width: 26px; height: 26px; margin: 0px; padding: 0px 0px 0px 0px; border-radius: 13px; border: 2px solid gainsboro; line-height: normal; text-align: center; background-color: lightgreen; padding-inline-start: 1px;}
+.smov:hover {border-color: red;}
 .thermal0 {
-  position: absolute;
   left: 58%;
   top:  23%;
-  width: 36px;
-  height: 36px;
-  background-color: lightgreen;
-  margin: 0px;
-  border-radius: 25px;
-  cursor: pointer;
   }
-.thermal0:hover {border-color: red;}
 .thermal1 {
-  position: absolute;
   left: 55%;
   top:  74%;
-  width: 36px;
-  height: 36px;
-  background-color: lightgreen;
-  margin: 0px;
-  border-radius: 25px;
-  cursor: pointer;
  }
- .thermal1:hover {border-color: red;}
 .thermal2 {
-  position: absolute;
   left: 63%;
   top:  31%;
-  width: 36px;
-  height: 36px;
-  background-color: lightgreen;
-  margin: 0px;
-  border-radius: 25px;
-  cursor: pointer;
-}
-.thermal2:hover {border-color: red;}
+  }
 .thermal3 {
-  position: absolute;
   left: 73%;
   top:  40%;
-  width: 36px;
-  height: 36px;
-  background-color: lightgreen;
-  margin: 0px;
-  border-radius: 25px;
-  cursor: pointer;
  }
-.thermal3:hover {border-color: red;}
 .thermal4 {
-  position: absolute;
   left: 31%;
   top:  24%;
-  width: 36px;
-  height: 36px;
-  background-color: lightgreen;
-  margin: 0px;
-  border-radius: 25px;
-  cursor: pointer;
  }
-.thermal4:hover {border-color: red;}
 .thermal5 {
-  position: absolute;
   left: 83%;
   top:  50%;
-  width: 36px;
-  height: 36px;
-  background-color: lightgreen;
-  margin: 0px;
-  border-radius: 25px;
-  cursor: pointer;
-}
-.thermal5:hover {border-color: red;}
+ }
 .thermal6 {
-  position: absolute;
   left: 39%;
   top:  65%;
-  width: 36px;
-  height: 36px;
-  background-color: lightgreen;
-  margin: 0px;
-  border-radius: 25px;
-  cursor: pointer;
-}
-.thermal6:hover {border-color: red;}
+  }
 .thermal7 {
-  position: absolute;
   left: 32%;
   top:  50%;
-  width: 36px;
-  height: 36px;
-  background-color: lightgreen;
-  margin: 0px;
-  border-radius: 25px;
-  cursor: pointer;
-}
-.thermal7:hover {border-color: red;}
+ }
 .thermal8 {
-  position: absolute;
   left: 60%;
   top:  40%;
-  width: 36px;
-  height: 36px;
-  background-color: lightgreen;
-  margin: 0px;
-  border-radius: 25px;
-  cursor: pointer;
-}
-.thermal8:hover {border-color: red;}
+ }
 .thermal9 {
-  position: absolute;
   left: 57%;
   top:  61%;
-  width: 36px;
-  height: 36px;
-  background-color: lightgreen;
-  margin: 0px;
-  border-radius: 25px;
-  cursor: pointer;
-}
-.thermal9:hover {border-color: red;}
+  }
+.thermal10 {
+  left: 69%; top:  21%;
+  }
+.thermal11 {
+  left: 55%; top:  28%;
+ }
+.thermal12 {
+  left: 51%; top:  29%;
+ }
+.thermal13 {
+  left: 50%; top:  40%;
+ }    
 .button1 {  width: 84px;   height: 36px; background-color: #EEF6FA;  margin: 4px;
    			border-radius: 5px;   font-size: 14px; color: #314483; cursor: pointer;
    			}
@@ -213,36 +147,37 @@ tr { background-color: aliceblue;} tr:not(:first-child):hover {background-color:
 <body onload="load_potential()">
 
 <script>
-   var day;
+   let day = 0;
    let loca = 0;
    var startgrid;
    var potarray = new Array();
    var thermal_wind_sw = "thermal";
    const weekday = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag", "Montag","Dienstag","Mittwoch","Donnerstag"];
-   const grids = ["Scheidegg", "Locarno", "Hüsliberg", "Pany", "Solothurn", "Scuol", "Fiesch", "Niesen", "Braunwald-Gumen", "Cari"];
+   const grids = ["Scheidegg", "Locarno", "Hüsliberg", "Pany", "Solothurn", "Scuol", "Fiesch", "Niesen", "Braunwald-Gumen", "Cari", "Ebenalp", "Galgenen", "Zugerberg", "Engelberg"];
    const models = ["ICON-D2", "ICON-D2", "ICON-EU", "ICON-EU", "ICON-EU" , "ICON-EU"];
-    const wind_color = ["limegreen", "springgreen", "lawngreen", "greenyellow", "yellow", "gold", "orange", "orangered", "tomato", "lightcoral", "indianred", "orchid", "darkorchid"];
+   const wind_color = ["limegreen", "springgreen", "lawngreen", "greenyellow", "yellow", "gold", "orange", "orangered", "tomato", "lightcoral", "indianred", "orchid", "darkorchid"];
    const d = new Date();
+   const maxloc = 14;
    var forecast = {};
    function datehour() {return d.getHours() + 100 * d.getDate() + 10000 * d.getMonth();}
    async function load_potential(){document.getElementById("display_temp").innerHTML = "<h3>loading...</h3>";
-                      let x = await fetch('http://localhost:8000/thermal_forecast.json');
+                      let x = await fetch('http://localhost:8000/emagrams/thermal_forecast.json');
                       forecast = await x.json();
                       document.getElementById("display_temp").innerHTML = forecast[0][0][12].cloudcover;
                       setday();
-                      set_active_location(0);
-                      show_forecast();
-                      setTimeout(function (){changeColor(0)}, 1000);
+                      setTimeout(function (){display_data(0)}, 1000);
                       }
    function setday(){day = 0; startgrid = "Scheidegg";
                      document.getElementById("my-div0").innerHTML = "Heute";
                      for (let j = 1; j <= 4; j++) {
                           document.getElementById("my-div" + j).innerHTML = weekday[d.getDay() + j];}
 }
-function changeColor(i) {
-    for (let l = 0; l <= 9; l++) {
-        document.getElementById("thermal" + l).style.backgroundColor = col(forecast[0][l][12].potential);
-        document.getElementById("thermal" + l).innerHTML = "<a class='km'>" + forecast[0][l][12].potential + "</a>";
+function display_data(i) {
+    for (let l = 0; l < maxloc; l++) {
+         console.log(day, l );
+        document.getElementById("thermal" + l).style.backgroundColor = col(forecast[day][l][12]?.potential ??0 );
+        document.getElementById("thermal" + l).innerHTML = "<a class='km'>" + forecast[day][l][12].potential + "</a>";
+        load_table(0, 0);
     }
     day = i;
     document.getElementById("day_indicator").innerHTML = models[day];
@@ -251,9 +186,34 @@ function changeColor(i) {
     }
     document.getElementById("my-div" + day).className = "active_button";
     show_forecast();
-    clear_table();
-    load_data();
+    }
+function load_table(l, day){ // loops from 9 o'clock until 20.
+  clear_table();
+  for (let t = 10; t <= 20; t++) {
+  document.getElementById("sun" + t).innerHTML = forecast[day][l][t].sun;
+  document.getElementById("wind" + t).innerHTML = forecast[day][l][t].wind;
+  document.getElementById("cloud" + t).innerHTML = forecast[day][l][t].cloudcover;
+
+  { for (let h = 800; h<=4200; h=h+200)
+							{
+						document.getElementById(h + "-" + t).innerHTML = forecast[day][l][t].model_data[h]?.thermal ?? "";
+						document.getElementById(h + "-" + t).style.backgroundColor = "white";
+							}
+						}
+
+  }
 }
+
+function display_wind(){
+  let l = loca;
+  for (let t = 10; t <= 20; t++) {
+    for (let h = 800; h<=4200; h=h+200)
+							{
+						document.getElementById(h + "-" + t).innerHTML = arrow_svg(forecast[day][l][t].model_data[h]?.wind_deg ?? 0) + "<span class='wind_font'>" + (forecast[day][l][t].model_data[h]?.wind ?? 0)+ "</span>";
+						document.getElementById(h + "-" + t).style.backgroundColor = wind_color[Math.min(Math.floor((forecast[day][l][t].model_data[h]?.wind ?? 0)/5), 12)];
+							}
+          }
+        }
 function arrow_svg(angle){
       var pi180 = Math.PI / 180;
       let r = 5
@@ -275,14 +235,9 @@ function col(distst){
               let fac = (15625 - (dist - 125)**2) / 260
                 return `rgba(${r}, ${r + fac}, ${r - fac}, 1)`
                 }
-    function show_grid(n) {startgrid = grids[n]; show_forecast(); set_active_location(n); loca = n;
-                           clear_table(); load_data();}
-    function set_active_location(loc){
-             for (let l = 0; l <= 9; l++) {document.getElementById("thermal" + l).className = "thermal" + l;}
-             document.getElementById("thermal" + loc).className   += " thermal_active";}
-
-    function show_forecast() {document.getElementById("display_temp").innerHTML = "<h3>" + startgrid +
-         " Day-" + day + "</h3><img src='forecast" + startgrid + day + ".png?" + datehour() + "'>" ;}
+    function show_grid(l) {startgrid = grids[l]; load_table(l, day); loca = l;show_ema(14);}
+  
+    function show_forecast() {}
 
 function clear_table(){ for (let t = 10; t<=20; t++)
 						{ for (let h = 800; h<=4200; h=h+200)
@@ -300,104 +255,26 @@ function liftcol(lift){
                 let fac = (15625 - (l - 125)**2) / 260;
                 return `rgba(${r}, ${r + fac}, ${r - fac}, 1)`
                 }
-async function load_thermal_model()
-  {
-  let x = await fetch("http://localhost:63342/Thermal-prediction-Alp-Scheidegg/thermal_data_multi.txt?"+ datehour());
-  let y = await x.text();
-  thermlist = y.split(',');
-  let adr = "invalid";
-  let adr_flag = 0;
-  document.getElementById("b2").innerHTML = "Thermik-Modell: " + startgrid + ", " + weekday[d.getDay() + day];
-  clear_table();
-  for (let t in thermlist)
-    {
-	if(thermlist[t].substring(0,3) == "LOC" && thermlist[t].substring(7,8) == day && thermlist[t].substring(3,4) == loca )
-		{lt = thermlist[t].substring(10,12); height = thermlist[t].substring(13,17); adr = height + "-" + lt; adr_flag = 1;}
-	else
-		{
-		if (adr_flag == 1)
-			{
-			adr_flag = 0;
-			if(isNaN(thermlist[t]))
-				{
-				svg_adr = thermlist[t] + '.svg'
-				document.getElementById(adr).innerHTML = "<img src='" + svg_adr + "'>";
-				}
-			    else
-				{
-				document.getElementById(adr).innerHTML = thermlist[t];
-				document.getElementById(adr).style.backgroundColor = liftcol(thermlist[t]);
-				}
-			}
-		}
-	 }
-  }
-function new_day(){day ++; if(day > 4){day=0;} document.getElementById("b2").innerHTML = day + "+"; clear_table(); load_thermal_model(); show_forecast();}
-async function load_wind()
-  {
-  let w = await fetch("http://localhost:63342/Thermal-prediction-Alp-Scheidegg/wind_data_multi.txt?"+ datehour());
-  let y = await w.text();
-  windlist = y.split(',');
-  let adr = "invalid";
-  let adr_flag = 0;
-  document.getElementById("b2").innerHTML = "Wind-Daten: " + startgrid + ", " + weekday[d.getDay() + day];
-  clear_table();
-  for (let t in windlist)
-    {
-	if(windlist[t].substring(0,3) == "LOC" && windlist[t].substring(7,8) == day && windlist[t].substring(3,4) == loca )
-		{lt = windlist[t].substring(10,12); height = windlist[t].substring(13,17); adr = height + "-" + lt; adr_flag = 1;}
-	else
-		{
-		if (adr_flag == 1)
-			{
-			adr_flag = 0;
-			wind_speed = parseInt(windlist[t].substring(0,3));
-			wind_angle = parseInt(windlist[t].substring(6,9));
-			document.getElementById(adr).innerHTML = arrow_svg(wind_angle) + "<span class='wind_font'>" + wind_speed + "</span>";
-			document.getElementById(adr).style.backgroundColor = wind_color[Math.min(Math.floor(wind_speed/5), 12)];
-			}
-		}
-	}
-  }
-  function wind_panel() {
-  for (let i = 0; i < 13; i++)
-    {
-     let panel = i*5 + " - " + (i*5+5)
-     document.getElementById(i).innerHTML = "<span class='wind_font'>" + panel + "</span>";
-     document.getElementById(i).style.backgroundColor = wind_color[Math.min(Math.floor(i), 12)];
-     }
-  }
-function display_wind() {
-    thermal_wind_switch = document.getElementById("wind_therm_chk").checked;
-    if (thermal_wind_switch) {
-        thermal_wind_sw = "thermal";
-    } else {
-        thermal_wind_sw = "wind";
-    }
-    document.getElementById("t_wind").innerHTML = "  Switch:" + thermal_wind_switch + " " + thermal_wind_sw;
-    load_data();
-}
-function load_data()
-    {clear_table(); wind_panel();
-    if (thermal_wind_sw == "thermal")
-        {load_thermal_model();}
-        else {load_wind();}
-        document.getElementById("t_wind").innerHTML = "  Load Data:" + thermal_wind_sw;
-    }
-function show_ema(n) {var fd = loca.toString().padStart(2, '0');
-  document.getElementById("ema-svg").src = `emagrams/emagram_loc${fd}_d1lt${n}.svg`;}
+
+function new_day(){day ++; if(day > 4){day=0;} document.getElementById("b2").innerHTML = day + "+";  load_thermal_model(); show_forecast();}
+function show_ema(lt) {var fd = loca.toString().padStart(2, '0');
+  document.getElementById("ema-svg").src = `emagrams/emagram_loc${fd}_d${day}lt${lt}.svg`;}
 </script>
 <div class="overview" id="overview">
-    <button class="thermal1" id="thermal1" onclick="show_grid(1)"><a class="km">LO</a></button>
-    <button class="thermal8" id="thermal8" onclick="show_grid(8)"><a class="km">BR</a></button>
-    <button class="thermal2" id="thermal2" onclick="show_grid(2)"><a class="km">HÜ</a></button>
-    <button class="thermal0" id="thermal0" onclick="show_grid(0)"><a class="km">AS</a></button>
-    <button class="thermal3" id="thermal3" onclick="show_grid(3)"><a class="km">PY</a></button>
-    <button class="thermal4" id="thermal4" onclick="show_grid(4)"><a class="km">SO</a></button>
-    <button class="thermal5" id="thermal5" onclick="show_grid(5)"><a class="km">SC</a></button>
-    <button class="thermal6" id="thermal6" onclick="show_grid(6)"><a class="km">FI</a></button>
-    <button class="thermal7" id="thermal7" onclick="show_grid(7)"><a class="km">NI</a></button>
-    <button class="thermal9" id="thermal9" onclick="show_grid(9)"><a class="km">CA</a></button>
+    <button class="thermal1 smov" id="thermal1" onclick="show_grid(1)"><a class="km">LO</a></button>
+    <button class="thermal8 smov" id="thermal8" onclick="show_grid(8)"><a class="km">BR</a></button>
+    <button class="thermal2 smov" id="thermal2" onclick="show_grid(2)"><a class="km">HÜ</a></button>
+    <button class="thermal3 smov" id="thermal3" onclick="show_grid(3)"><a class="km">PY</a></button>
+    <button class="thermal4 smov" id="thermal4" onclick="show_grid(4)"><a class="km">SO</a></button>
+    <button class="thermal5 smov" id="thermal5" onclick="show_grid(5)"><a class="km">SC</a></button>
+    <button class="thermal6 smov" id="thermal6" onclick="show_grid(6)"><a class="km">FI</a></button>
+    <button class="thermal7 smov" id="thermal7" onclick="show_grid(7)"><a class="km">NI</a></button>
+    <button class="thermal9 smov" id="thermal9" onclick="show_grid(9)"><a class="km">CA</a></button>
+    <button class="thermal10 smov" id="thermal10" onclick="show_grid(10)"><a class="km">EA</a></button>
+    <button class="thermal12 smov" id="thermal12" onclick="show_grid(12)"><a class="km">ZG</a></button>
+    <button class="thermal11 smov" id="thermal11" onclick="show_grid(11)"><a class="km">GA</a></button>
+    <button class="thermal13 smov" id="thermal13" onclick="show_grid(13)"><a class="km">EB</a></button>
+    <button class="thermal0 smov" id="thermal0" onclick="show_grid(0)"><a class="km">AS</a></button>
 </div>
 <button class="button1" id="my-div0" onclick="changeColor(0)">Heute</button>
 <button class="button1" id="my-div1" onclick="changeColor(1)">Tag 1</button>
@@ -409,21 +286,20 @@ function show_ema(n) {var fd = loca.toString().padStart(2, '0');
 <div class="layout-container"><img id="ema-svg" src="emagrams/emagram_loc00_d0lt10.svg">
   <table style="width:550px">
     <tr><th>Zeit<br>LT</th><th>Wind<br>km/h</th><th>Sonne<br>%</th><th>Wolken<br>l-m-h</th><th>Lift<br>m/s</th><th>Base/Top<br>m</th></tr>
-    <tr onmouseover="show_ema(10)"><td>10:00</td><td></td><td>3</td><td>8-8-0</td><td></td><td></td></tr>
-    <tr onmouseover="show_ema(11)"><td>11:00</td><td></td><td>4</td><td>8-8-0</td><td></td><td></td></tr>
-    <tr onmouseover="show_ema(12)"><td>12:00</td><td></td><td>5</td><td>8-8-4</td><td></td><td></td></tr>
-    <tr onmouseover="show_ema(13)"><td>13:00</td><td></td><td>5</td><td>8-8-0</td><td></td><td></td></tr>
-    <tr onmouseover="show_ema(14)"><td>14:00</td><td></td><td>5</td><td>8-8-1</td><td></td><td></td></tr>
-    <tr onmouseover="show_ema(15)"><td>15:00</td><td></td><td>5</td><td>8-8-0</td><td></td><td></td></tr>
-    <tr onmouseover="show_ema(16)"><td>16:00</td><td></td><td>5</td><td>8-8-0</td><td></td><td></td></tr>
-    <tr onmouseover="show_ema(17)"><td>17:00</td><td></td><td>5</td><td>8-8-0</td><td></td><td></td></tr>
-    <tr onmouseover="show_ema(18)"><td>18:00</td><td></td><td>5</td><td>8-8-0</td><td></td><td></td></tr>
-    <tr onmouseover="show_ema(19)"><td>19:00</td><td></td><td>4</td><td>8-8-0</td><td></td><td></td></tr>
-    <tr onmouseover="show_ema(20)"><td>20:00</td><td></td><td>0</td><td>8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(9)"><td>09:00</td><td id="wind9">4</td><td id="sun9"></td><td id="cloud9">8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(10)"><td>10:00</td><td id="wind10">4</td><td id="sun10"></td><td id="cloud10">8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(11)"><td>11:00</td><td id="wind11">0</td><td id="sun11"></td><td id="cloud11">8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(12)"><td>12:00</td><td id="wind12">5</td><td id="sun12"></td><td id="cloud12">8-8-4</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(13)"><td>13:00</td><td id="wind13">5</td><td id="sun13"></td><td id="cloud13">8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(14)"><td>14:00</td><td id="wind14">5</td><td id="sun14"></td><td id="cloud14">8-8-1</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(15)"><td>15:00</td><td id="wind15">5</td><td id="sun15"></td><td id="cloud15">8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(16)"><td>16:00</td><td id="wind16">5</td><td id="sun16"></td><td id="cloud16">8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(17)"><td>17:00</td><td id="wind17">5</td><td id="sun17"></td><td id="cloud17">8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(18)"><td>18:00</td><td id="wind18">5</td><td id="sun18"></td><td id="cloud18">8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(19)"><td>19:00</td><td id="wind19">4</td><td id="sun19"></td><td id="cloud19">8-8-0</td><td></td><td></td></tr>
+    <tr onmouseover="show_ema(20)"><td>20:00</td><td id="wind20">0</td><td id="sun20"></td><td id="cloud20">8-8-0</td><td></td><td></td></tr>
   </table>
-</div>
-
-<div id="display_temp"><img src="/images/thomaskamps/multitherm/forecastScheidegg0.png" ></div>
+</div><p id="display_temp"></p>
 <div>
     <h3 id="b2">Thermik-Modell</h3>
     <span>Wind  </span><label class="switch" id="wind_therm_select" onclick="display_wind()" >

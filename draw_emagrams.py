@@ -5,7 +5,7 @@ import math
 
 lt_time = 9
 day = lt_time // 24
-init = "20261110"
+init = "20261112"
 # sytem_path = '/home/meteoman/icon_ch2/'
 sytem_path = ''
 path = sytem_path + "data/"
