@@ -69,6 +69,7 @@ def add_entry(data_dict, day, location, hour, sun, cloudcover, lift, base, wind,
 
 # 1. Start with an empty dictionary
 thermal_data = {}
+location_totals = {}
 
 loc = 0
 level = 80
@@ -78,7 +79,8 @@ while fc_day < 5:
     while loc < locations.max_locations:
     
         print(f"Day {fc_day}: Location {loc}: {locations.name_start[loc]}")
-
+        total_distance = 0
+        freezing_level = 400
         lt_time = 9 + fc_day * 24
         while lt_time <= 20 + fc_day * 24:
 
@@ -92,16 +94,15 @@ while fc_day < 5:
             wind_high = int(wind_speed[loc, level-10, lt_time])
             wind_dir_high = wind_direction[loc-10, level, lt_time]
 
+
             sun = round(radiation[loc,lt_time]/800 * 100) # radiation in % of possible maximum
             cch = int (cloudcover[loc,lt_time] / 100)
             ccm = int ((cloudcover[loc,lt_time] % 100) / 10)
             ccl = int ((cloudcover[loc,lt_time] % 10) / 1)
             cc = f'{ccl}-{ccm}-{cch}'
 
-
             # here comes the call of the thermal model
-            model_result, best_lift, base = thermal_model_ch2.calculate_thermals(loc, lt_time, locations.start_height[loc], 
-                                            locations.mountain_top[loc], 600, 0, 12, locations.terrains[loc])
+            model_result, best_lift, base = thermal_model_ch2.calculate_thermals(loc, lt_time, lt_time % 24, radiation= 500)
             # calculate the PFD
             distance = 0
             if best_lift >= 1:  # root-function gets 1 with a base of 2'000 meters
@@ -109,6 +110,7 @@ while fc_day < 5:
                             * pow(max((base - locations.flight_range_low[loc]), 0), 0.5) / 28.2)
             elif best_lift > 0.5:
                 distance = distance + 1
+            total_distance += distance
 
             # write to the JSON
             add_entry(thermal_data, fc_day, loc, lt_time, sun, cc,     
@@ -119,6 +121,19 @@ while fc_day < 5:
                 model_datas=model_result,
             )
             lt_time += 1
+
+        # getting the freezing level height
+        lv = 80 # beginning at ground level
+        while lv > 20 and temperature[loc, lv, lt_time - 7] > 0:
+            lv = lv - 1
+        freezing_level = int(altitude[loc, lv, lt_time - 7])
+
+        # add location summaries
+        location_totals = {
+            "potential": total_distance,
+            "comment": f"Nullgrad-Grenze auf {freezing_level}m.",
+        }
+        thermal_data.setdefault(fc_day, {}).setdefault(loc, {})[24] = location_totals # position 24 in JSON
         loc += 1
     loc = 0
     fc_day +=1

@@ -32,14 +32,37 @@ def rh_from_tdew(temp_air, temp_dew):
     es = 6.112 * 2.718281 ** ((17.62 * temp_dew) / (243.12 + temp_dew))
     return es / e
 
+fc_day = 0
+start_time = datetime.now()
+init = start_time.strftime("%Y%m%d")
+# init = "20261114"
+path = "data/"
 # Loading ICON Data
-temperature = np.load('temperature_icon_ch2_1.npy')
-altitude = np.load('altitude_icon_ch2_1.npy')
-dewpoint = np.load('dewpoint_icon_ch2_1.npy')
+temperature = np.load(f'{path}temperature_icon_ch2_{init}.npy')
+altitude = np.load(f'{path}altitude_icon_ch2_{init}.npy')
+dewpoint = np.load(f'{path}dewpoint_icon_ch2_{init}.npy')
+wind_speed = np.load(f'{path}wind_speed_icon_ch2_{init}.npy')
+wind_direction = np.load(f'{path}wind_direction_icon_ch2_{init}.npy')
+radiation = np.load(f'{path}radiation_icon_ch2_{init}.npy')
+cloudcover = np.load(f'{path}cloudcover_icon_ch2_{init}.npy')
+percipitation = np.load(f'{path}percipitation_icon_ch2_{init}.npy')
 
+# preparing a dictionary for thermal data and wind
+def add_thermal(data_dict, height, lift, clouds, wind, wind_deg):
+    model_data = {
+        "th": round(float(lift), 1),
+        "cl": clouds,
+        "wi": wind,
+        "wd": wind_deg
+        }
+    data_dict.setdefault(height, model_data)
 
 # here the model begins
-def calculate_thermals( loc, start_height, mountain_top, radiation, precipitation, time_hr, terrain):
+def calculate_thermals( loc, l_time, time_hr, radiation):
+    terrain = locations.terrains[loc]
+    start_height = locations.start_height[loc]
+    mountain_top = locations.mountain_top[loc]
+    per = percipitation[loc, l_time]
     ground_level = 400
     parcel_temperature = [-100] * 81
     parcel_dewpoint = [-100] * 81
@@ -49,11 +72,11 @@ def calculate_thermals( loc, start_height, mountain_top, radiation, precipitatio
     parcel_updraft = [0] * 80
     calculation_base = max(ground_level, start_height - 400)
     condensed = 0
-    updraft = 0
     # more variables
-    best_lift = 0
+    best_lift = 0.0
     base_top = 0
     html_string = []
+    thermal_data = {}
     # astro parameters for alpine starting places.
     latitude = 47.255
     date = datetime.now()
@@ -71,8 +94,8 @@ def calculate_thermals( loc, start_height, mountain_top, radiation, precipitatio
     sun_angle = max(math.asin(math.sin(math.radians(maxdeclination))
                               * math.cos(math.radians(delta_zenit * 15))) * 180 / math.pi, 0)
     rad90 = radiation / math.sin(max(math.radians(sun_angle), 0.1))
-    print('time: ', time_hr, ' sun angle: ', sun_angle, ' post winter solstice:', post_winter_solstice,
-          ' max decl. ', maxdeclination, ' Terrain: ', terrain, ' radiation:', radiation, ' 90-deg:', rad90)
+    # print('time: ', time_hr, ' sun angle: ', sun_angle, ' post winter solstice:', post_winter_solstice,
+    #      ' max decl. ', maxdeclination, ' Terrain: ', terrain, ' radiation:', radiation, ' 90-deg:', rad90)
 
     # calculate the distribution of sun in the valley and in the mountains from the declination of the sun
     if terrain == 'alpine':
@@ -85,27 +108,26 @@ def calculate_thermals( loc, start_height, mountain_top, radiation, precipitatio
     # Setting of the loop variables
     level = 80 # the calcalation starts at 80, the lowest level of the ICON model
     print(f"Location {loc}: {locations.name_start[loc]}")
-    # initialize the bottem values
-    t0 = temperature[loc, level, 0]
-    h0 = altitude[loc, level, 0]
+    # initialize the bottom values
+    t0 = temperature[loc, level, l_time]
+    h0 = altitude[loc, level, l_time]
     i = max (math.ceil(h0 / 200) * 200, 800)
-    j = 800
-    while j < i: # prefill string with green svg
-        html_string.append(str(j) + ',Green')
-        j = j + 200
-
+    cloud = ''
+    lift = 0.0
+    updraft = 0.0
+    model_datas = {}
     # Loop over all levels beginning from 80 down to 39   
     while level > 38:
         level -= 1
-        t1 = temperature[loc, level, 0]
-        h1 = altitude[loc, level, 0]
+        t1 = temperature[loc, level, l_time]
+        h1 = altitude[loc, level, l_time]
         thickness = h1 - h0
         temp = (t1 - t0) / thickness * 100
         
         # init Parcel
         if h1 < calculation_base: # below the start, ambient atmospheric values are taken over
             parcel_temperature[level] = t1
-            parcel_dewpoint[level] = dewpoint[loc, level, 0]
+            parcel_dewpoint[level] = dewpoint[loc, level, l_time]
         else:
             factor = max(1, 2 - updraft) * thickness / 100 # the weaker the updraft, the more mixes ambient air into the parcel
             if t1 > parcel_dewpoint[level] + 0.5: # no condensation case
@@ -137,47 +159,45 @@ def calculate_thermals( loc, start_height, mountain_top, radiation, precipitatio
             
 
         # Test printout of data
-        print(f"Level {level}: {h1:.0f} m, Temp {t1:.1f} °C, Dewpt {dewpoint[loc, level, 0]:.1f} °C, "
-              f"Temp: {temp:.1f} K/100 m, Parcel_t {parcel_temperature[level]:.1f}°C, Parcel_dp {parcel_dewpoint[level]:.1f}°C "
-              f"Cond= {condensation[level]}, updraft: {updraft:.1f}")
-
+        #print(f"Level {level}: {h1:.0f} m, Temp {t1:.1f} °C, Dewpt {dewpoint[loc, level, 0]:.1f} °C, "
+        #      f"Temp: {temp:.1f} K/100 m, Parcel_t {parcel_temperature[level]:.1f}°C, Parcel_dp {parcel_dewpoint[level]:.1f}°C "
+        #      f"Cond= {condensation[level]}, {condensed}, updraft: {updraft:.1f}")
+        cloud = ''
         if h0 <= i <= h1 and i <= 4000:  # one data point each 200 meters until 4'000 meters
             if i <= calculation_base:
-                html_string.append(str(i) + ',Green')
+                cloud = 'Green'
             else:
                 if condensation[level] == 'yes':
                     if precipitation > 10:
                         if t1 >= 0:
-                            html_string.append(str(i) + ',cloud_flash')
+                            cloud = 'cloud_flash'
                         else:
-                            html_string.append(str(i) + ',cloud_flash_snow')
+                            cloud = 'cloud_flash_snow'
                     elif precipitation > 2:
                         if t1 >= 0:
-                            html_string.append(str(i) + ',cloud_rain2')
+                            cloud = 'cloud_rain2'
                         else:
-                            html_string.append(str(i) + ',cloud_snow2')
+                            cloud = 'cloud_snow2'
                     elif precipitation > 0:
                         if t1 >= 0:
-                            html_string.append(str(i) + ',cloud_rain1')
+                            cloud = 'cloud_rain1'
                         else:
-                            html_string.append(str(i) + ',cloud_snow1')
+                            cloud = 'cloud_snow1'
                     elif updraft > 0:
-                        html_string.append(str(i) + ',cloud_cumulus')
-                    condensed = 1
+                        cloud = 'cloud_cumulus'
+                        condensed = 1
                 elif condensed == 0 and updraft > 0:
-                    html_string.append(str(i) + ',' + str(round(updraft, 1)))
+                    lift = round(updraft, 1)
+            add_thermal(model_datas, height=i, lift= round(lift, 1), clouds=cloud, wind= round(wind_speed[loc, level, l_time]), 
+                        wind_deg= round(wind_direction[loc, level, l_time]))
             i = i + 200
-
-
         # best lift and base / top
         if i > start_height and updraft > 0.5 and condensed == 0:
-            best_lift = round(max(updraft, best_lift), 1)
+            best_lift = round(float(max(updraft, best_lift)), 1)
             base_top = i
-
-
     
         # prepare for the next level
         t0 = t1
         h0 = h1
         
-    return html_string
+    return model_datas, best_lift, base_top
