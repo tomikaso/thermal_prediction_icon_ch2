@@ -5,7 +5,7 @@ import math
 
 lt_time = 9
 day = lt_time // 24
-init = "20261112"
+init = "20261114"
 # sytem_path = '/home/meteoman/icon_ch2/'
 sytem_path = ''
 path = sytem_path + "data/"
@@ -68,7 +68,7 @@ ty = height - 2 * border
 tx = width - 2 * border
 
 while lt_time < 120:
-    print(f'Beginning with day {day}, {lt_time}:00')
+    print(f'Beginning with day {day}, {lt_time}, Location {loc}, local time {lt_time % 24}:00')
     while loc < locations.max_locations and altitude[loc, 38, lt_time] > 0:
         level = 80
         print(f"Location {loc}: {locations.name_start[loc]}")
@@ -92,8 +92,7 @@ while lt_time < 120:
         hd = hmax - h00
         # fix scale: for negative temperatures 1, then 0 for low positive and +1 if hot. Mean of 1500m and 3000m
         offset = - int((temperature[loc, 50, lt_time] + temperature[loc, 66, lt_time]) / 20) +1 
-        print(f"Location {loc}: offset = {offset}, hmax = {hmax}, h00 = {h00}, hd = {hd}")
-
+    
         # draw the backgroung prior to the lines
         while level > 38:
             level -= 1
@@ -183,5 +182,5 @@ while lt_time < 120:
     lt_time += 1
     loc = 0
     if lt_time % 24 > 20:
-        lt_time += 13 # jump to the next day 9 o'clock
+        lt_time += 12 # jump to the next day 9 o'clock
     day = lt_time // 24

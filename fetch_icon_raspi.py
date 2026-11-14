@@ -26,7 +26,7 @@ def calculate_dew_point(T_celsius, q, h):
     return Td
 
 sytem_path = '/home/meteoman/icon_ch2/'
-# sytem_path = ''  # activate for WSL
+sytem_path = ''  # activate for WSL
 
 with open(f"{sytem_path}load_status.json", "r") as file:
     loaded_data = json.load(file)
@@ -44,12 +44,11 @@ start_time = dt.datetime.now(local_tz)
 start_date = start_time.strftime("%Y%m%d")
 local_tz = ZoneInfo("Europe/Zurich")
 utc_offset = int(start_time.utcoffset().total_seconds() / 3600)
-start_date = start_time.strftime("%Y%m%d")
 start_hour = ((start_time.hour - 3 ) // 6) * 6 
 print(f'Starting load at: {start_time}')
 
 if (leadtime_original + loaded_data["model_run"] + utc_offset) % 24 >= 20: # jump to the next day
-    leadtime_original = leadtime_original + 13 # jumps from 20:00 to 09:00 next day
+    leadtime_original = leadtime_original + 12 # jumps from 20:00 to 09:00 next day
 
 # is there already data for this date?
 datei_pfad = Path(f"{path}temperature_icon_ch2_{start_date}.npy")
