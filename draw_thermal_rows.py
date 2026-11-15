@@ -22,6 +22,7 @@ wind_direction = np.load(f'{path}wind_direction_icon_ch2_{init}.npy')
 radiation = np.load(f'{path}radiation_icon_ch2_{init}.npy')
 cloudcover = np.load(f'{path}cloudcover_icon_ch2_{init}.npy')
 percipitation = np.load(f'{path}percipitation_icon_ch2_{init}.npy')
+pressure = np.load(f'{path}pressure_icon_ch2_{init}.npy')
 
 # wind-direction
 def wind_dir_str(grad):
@@ -102,7 +103,7 @@ while fc_day < 5:
             cc = f'{ccl}-{ccm}-{cch}'
 
             # here comes the call of the thermal model
-            model_result, best_lift, base = thermal_model_ch2.calculate_thermals(loc, lt_time, lt_time % 24, radiation= 500)
+            model_result, best_lift, base = thermal_model_ch2.calculate_thermals(loc, lt_time, lt_time % 24)
             # calculate the PFD
             distance = 0
             if best_lift >= 1:  # root-function gets 1 with a base of 2'000 meters
@@ -131,7 +132,7 @@ while fc_day < 5:
         # add location summaries
         location_totals = {
             "potential": total_distance,
-            "comment": f"Nullgrad-Grenze auf {freezing_level}m.",
+            "comment": f"Pot. Distanz: {total_distance}km.<br>Nullgrad-Grenze auf {freezing_level}m.",
         }
         thermal_data.setdefault(fc_day, {}).setdefault(loc, {})[24] = location_totals # position 24 in JSON
         loc += 1

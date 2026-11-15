@@ -7,7 +7,7 @@ import locations
 import json
 from pathlib import Path
 
-def calculate_dew_point(T_celsius, q, h):
+def calculate_dew_point(q, h):
     # calculate the pressure in hPa
     P_hpa = 1013.25 * (1 - 0.0000225577 * h)**5.25588
     
@@ -42,10 +42,15 @@ new_day_flag = False
 local_tz = ZoneInfo("Europe/Zurich")
 start_time = dt.datetime.now(local_tz)
 start_date = start_time.strftime("%Y%m%d")
-local_tz = ZoneInfo("Europe/Zurich")
 utc_offset = int(start_time.utcoffset().total_seconds() / 3600)
 start_hour = ((start_time.hour - 3 ) // 6) * 6 
 print(f'Starting load at: {start_time}')
+z_time = "latest"
+z_time = "2026-11-15T06:00:00Z"
+start_hour = 9
+
+# sums of sunshine radiation for each location
+radiation_old_sum = [0] * locations.max_locations
 
 if (leadtime_original + loaded_data["model_run"] + utc_offset) % 24 >= 20: # jump to the next day
     leadtime_original = leadtime_original + 12 # jumps from 20:00 to 09:00 next day
@@ -61,6 +66,7 @@ if datei_pfad.is_file():
     radiation = np.load(f"{path}radiation_icon_ch2_{start_date}.npy")
     cloud_cover = np.load(f"{path}cloudcover_icon_ch2_{start_date}.npy")
     percipitation = np.load(f"{path}percipitation_icon_ch2_{start_date}.npy")
+    pressure = np.load(f"{path}pressure_icon_ch2_{start_date}.npy")
     leadtime = leadtime_original # we are in an ongoing load
 else:
     # set everything up for a new, fresh day :-)
@@ -72,6 +78,7 @@ else:
     radiation = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
     cloud_cover = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
     percipitation = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
+    pressure = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
     new_day_flag = True
 
     # calculating the leadtimes
@@ -89,7 +96,7 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
         collection="ogd-forecasting-icon-ch2",
         variable="T",
         perturbed=False,
-        ref_time="latest",
+        ref_time=z_time,
         lead_time=[
             dt.timedelta(hours=leadtime)
         ],
@@ -106,7 +113,7 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
         collection="ogd-forecasting-icon-ch2",
         variable="QV",
         perturbed=False,
-        ref_time="latest",
+        ref_time=z_time,
         lead_time=[
             dt.timedelta(hours=leadtime)
         ],
@@ -122,7 +129,7 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
         collection="ogd-forecasting-icon-ch2",
         variable="U",
         perturbed=False,
-        ref_time="latest",
+        ref_time=z_time,
         lead_time=[
             dt.timedelta(hours=leadtime)
         ],
@@ -138,7 +145,7 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
         collection="ogd-forecasting-icon-ch2",
         variable="V",
         perturbed=False,
-        ref_time="latest",
+        ref_time=z_time,
         lead_time=[
             dt.timedelta(hours=leadtime)
         ],
@@ -153,9 +160,9 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
     forecast_r = ekd.from_source(
             "meteoswiss-opendata",
             collection="ogd-forecasting-icon-ch2",
-            variable="ASOD_S",
+            variable="ASOB_S",
             perturbed=False,
-            ref_time="latest",
+            ref_time=z_time,
             lead_time=[
                 dt.timedelta(hours=leadtime)
             ],
@@ -171,7 +178,7 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
                 collection="ogd-forecasting-icon-ch2",
                 variable="CLCH",
                 perturbed=False,
-                ref_time="latest",
+                ref_time=z_time,
                 lead_time=[
                     dt.timedelta(hours=leadtime)
                 ],
@@ -187,14 +194,14 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
                 collection="ogd-forecasting-icon-ch2",
                 variable="CLCM",
                 perturbed=False,
-                ref_time="latest",
+                ref_time=z_time,
                 lead_time=[
                     dt.timedelta(hours=leadtime)
                 ],
             )
             
     dataset_ccm = forecast_ccm.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
-    init_time = dataset_r["forecast_reference_time"].values
+    init_time = dataset_ccm["forecast_reference_time"].values
     print(f'cloud cover mid: {init_time}, Leadtime: {leadtime}') 
 
     # Cloudcover low ground to 800hPa %
@@ -203,14 +210,14 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
                 collection="ogd-forecasting-icon-ch2",
                 variable="CLCL",
                 perturbed=False,
-                ref_time="latest",
+                ref_time=z_time,
                 lead_time=[
                     dt.timedelta(hours=leadtime)
                 ],
             )
             
     dataset_ccl = forecast_ccl.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
-    init_time = dataset_r["forecast_reference_time"].values
+    init_time = dataset_ccl["forecast_reference_time"].values
     print(f'cloud cover low: {init_time}, Leadtime: {leadtime}') 
 
     # Total percipitation
@@ -219,17 +226,32 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
                 collection="ogd-forecasting-icon-ch2",
                 variable="TOT_PR",
                 perturbed=False,
-                ref_time="latest",
+                ref_time=z_time,
                 lead_time=[
                     dt.timedelta(hours=leadtime)
                 ],
             )
             
     dataset_per = forecast_per.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
-    init_time = dataset_r["forecast_reference_time"].values
+    init_time = dataset_per["forecast_reference_time"].values
     print(f'total percipitaion: {init_time}, Leadtime: {leadtime}') 
 
-    
+    # pressure reduced to sea level
+    forecast_pressure = ekd.from_source(
+                    "meteoswiss-opendata",
+                    collection="ogd-forecasting-icon-ch2",
+                    variable="PMSL",
+                    perturbed=False,
+                    ref_time=z_time,
+                    lead_time=[
+                        dt.timedelta(hours=leadtime)
+                    ],
+                )
+                
+    dataset_pressure = forecast_pressure.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
+    init_time = dataset_pressure["forecast_reference_time"].values
+    print(f'pressure to sea level: {init_time}, Leadtime: {leadtime}')
+        
     # now get the vertical levels from the ICON-CH2 dataset
     vertical_ch2 = ekd.from_source(
         "meteoswiss-opendata-constants",
@@ -255,11 +277,14 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
     
         distanz = (dataset_t["latitude"] - ziel_lat)**2 + (dataset_t["longitude"] - ziel_lon)**2
         # 2. find the index (values-ID) of the nearest grid point
-        next_index = distanz.argmin().item()
+        # next_index = distanz.argmin().item()
+        next_index = int(np.argmin(distanz.data))
 
         # Measures without levels
-        radiation_w = dataset_r["avg_sdswrf"].sel(values=next_index)
-        radiation[loc, leadtime + load_hour] = radiation_w.values.item()
+        radiation_w = dataset_r["avg_snswrf"].sel(values=next_index)
+        accumulated_rad = radiation_w.values.item() * ((leadtime + load_hour) % 24)
+        radiation[loc, leadtime + load_hour + utc_offset] = accumulated_rad - radiation_old_sum[loc]
+        radiation_old_sum[loc] = accumulated_rad # store the pre-hour value
 
         # Cloud-Cover High
         cloud_h = dataset_cch["ccl"].sel(values=next_index)
@@ -272,6 +297,10 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
         # total percipitation
         per = dataset_per["tprate"].sel(values=next_index)
         percipitation[loc, leadtime + load_hour + utc_offset] = per.values.item() * 3600 # in l/hour
+
+        # pressure at sea level
+        press = dataset_pressure["prmsl"].sel(values=next_index)
+        pressure[loc, leadtime + load_hour + utc_offset] = press.values.item() / 100 # hPa
 
         level = 1
         while level <= 80:
@@ -293,7 +322,7 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
             v_wind = dataset_v["v"].sel(
                 level=desired_level,
                 values=next_index)
-            dew_point = calculate_dew_point(temperature[loc, level, leadtime + load_hour + utc_offset], specific_humidity.values.item(), height.values.item())
+            dew_point = calculate_dew_point(specific_humidity.values.item(), height.values.item())
             dewpoint[loc, level, leadtime + load_hour + utc_offset] = dew_point
             altitude[loc, level, leadtime + load_hour + utc_offset] = height.values.item()
             temp_celsius = abs_temp.values.item() - 273.15
@@ -317,6 +346,7 @@ np.save(f"{path}wind_direction_icon_ch2_{start_date}.npy", wind_direction)
 np.save(f"{path}radiation_icon_ch2_{start_date}.npy", radiation)
 np.save(f"{path}cloudcover_icon_ch2_{start_date}.npy", cloud_cover)
 np.save(f"{path}percipitation_icon_ch2_{start_date}.npy", percipitation)
+np.save(f"{path}pressure_icon_ch2_{start_date}.npy", pressure)
 
 load_status = {
     "status": "ok",

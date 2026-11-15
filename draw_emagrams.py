@@ -2,10 +2,14 @@ import numpy as np
 import locations
 import json
 import math
+import datetime as dt
 
+start_time = dt.datetime.now()
+# init = "20261114"
+init = start_time.strftime("%Y%m%d")
 lt_time = 9
 day = lt_time // 24
-init = "20261114"
+
 # sytem_path = '/home/meteoman/icon_ch2/'
 sytem_path = ''
 path = sytem_path + "data/"

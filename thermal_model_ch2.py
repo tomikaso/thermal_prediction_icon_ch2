@@ -9,8 +9,8 @@ import time
 updraft_factor = 48
 dry_adiabatic = 0.979
 moisture_adiabatic = 0.562
-mixing_dry = 0.1
-mixing_wet = 0.10
+mixing_dry = 0.05
+mixing_wet = 0.06
 std_pressure = 101325
 
 # calculate density
@@ -58,7 +58,7 @@ def add_thermal(data_dict, height, lift, clouds, wind, wind_deg):
     data_dict.setdefault(height, model_data)
 
 # here the model begins
-def calculate_thermals( loc, l_time, time_hr, radiation):
+def calculate_thermals( loc, l_time, time_hr):
     terrain = locations.terrains[loc]
     start_height = locations.start_height[loc]
     mountain_top = locations.mountain_top[loc]
@@ -71,11 +71,11 @@ def calculate_thermals( loc, l_time, time_hr, radiation):
     air_density = [0] * 80
     parcel_updraft = [0] * 80
     calculation_base = max(ground_level, start_height - 400)
+    rad = radiation[loc, l_time]
     condensed = 0
     # more variables
     best_lift = 0.0
     base_top = 0
-    html_string = []
     thermal_data = {}
     # astro parameters for alpine starting places.
     latitude = 47.255
@@ -93,9 +93,9 @@ def calculate_thermals( loc, l_time, time_hr, radiation):
     delta_zenit = (midday - time_hr) * 12 / daylength
     sun_angle = max(math.asin(math.sin(math.radians(maxdeclination))
                               * math.cos(math.radians(delta_zenit * 15))) * 180 / math.pi, 0)
-    rad90 = radiation / math.sin(max(math.radians(sun_angle), 0.1))
+    rad90 = rad / math.sin(max(math.radians(sun_angle), 0.1))
     # print('time: ', time_hr, ' sun angle: ', sun_angle, ' post winter solstice:', post_winter_solstice,
-    #      ' max decl. ', maxdeclination, ' Terrain: ', terrain, ' radiation:', radiation, ' 90-deg:', rad90)
+    #      ' max decl. ', maxdeclination, ' Terrain: ', terrain, ' radiation:', rad, ' 90-deg:', rad90)
 
     # calculate the distribution of sun in the valley and in the mountains from the declination of the sun
     if terrain == 'alpine':
@@ -130,7 +130,7 @@ def calculate_thermals( loc, l_time, time_hr, radiation):
             parcel_dewpoint[level] = dewpoint[loc, level, l_time]
         else:
             factor = max(1, 2 - updraft) * thickness / 100 # the weaker the updraft, the more mixes ambient air into the parcel
-            if t1 > parcel_dewpoint[level] + 0.5: # no condensation case
+            if t1 > parcel_dewpoint[level + 1] - 0.5: # no condensation case
                 if h1 <= mountain_top:  # add some energy as long as the peaks of the mountains are reached
                     parcel_temperature[level] = (parcel_temperature[level + 1] - dry_adiabatic * thickness / 100
                                                  + std_pressure / alt2pres(h1) * rad_effective / 3300 * thickness / 100)
@@ -139,7 +139,7 @@ def calculate_thermals( loc, l_time, time_hr, radiation):
                                                  * (1 - mixing_dry * factor) + mixing_dry * factor * t1)
 
                 parcel_dewpoint[level] = (parcel_dewpoint[level + 1] * (1 - mixing_dry * thickness / 100 * factor)
-                                            + mixing_dry * thickness / 100 * factor * dewpoint[loc, level, 0])
+                                            + mixing_dry * thickness / 100 * factor * dewpoint[loc, level, l_time])
                 condensation[level] = 'no'
 
             else: #condensation case
@@ -148,44 +148,44 @@ def calculate_thermals( loc, l_time, time_hr, radiation):
                                              * (1 - mixing_wet * factor) + mixing_wet * factor * t1)
 
                 parcel_dewpoint[level] = (parcel_dewpoint[level + 1] * (1 - mixing_wet * factor)
-                                          + mixing_wet * factor * dewpoint[loc, level, 0])
+                                          + mixing_wet * factor * dewpoint[loc, level, l_time])
         #  density of the air parcel
         parcel_density = density(alt2pres(h1), parcel_temperature[level], rh_from_tdew(parcel_temperature[level], parcel_dewpoint[level]))
         #  density of the ambient air
-        air_density = density(alt2pres(h1),t1, rh_from_tdew(t1, dewpoint[loc, level, 0]))
+        air_density = density(alt2pres(h1),t1, rh_from_tdew(t1, dewpoint[loc, level, l_time]))
         #  updraft
         updraft = max(0, (updraft_factor * max(air_density - parcel_density, 0) ** 0.6))
         parcel_updraft[level] = updraft
             
 
         # Test printout of data
-        #print(f"Level {level}: {h1:.0f} m, Temp {t1:.1f} °C, Dewpt {dewpoint[loc, level, 0]:.1f} °C, "
-        #      f"Temp: {temp:.1f} K/100 m, Parcel_t {parcel_temperature[level]:.1f}°C, Parcel_dp {parcel_dewpoint[level]:.1f}°C "
-        #      f"Cond= {condensation[level]}, {condensed}, updraft: {updraft:.1f}")
+    #    print(f"Level {level}: {h1:.0f} m, Temp {t1:.1f} °C, Dewpt {dewpoint[loc, level, l_time]:.1f} °C, "
+    #          f"Temp: {temp:.1f} K/100 m, Parcel_t {parcel_temperature[level]:.1f}°C, Parcel_dp {parcel_dewpoint[level]:.1f}°C "
+    #          f"Cond= {condensation[level]}, {condensed}, updraft: {updraft:.1f}")
         cloud = ''
         if h0 <= i <= h1 and i <= 4000:  # one data point each 200 meters until 4'000 meters
             if i <= calculation_base:
                 cloud = 'Green'
             else:
                 if condensation[level] == 'yes':
-                    if precipitation > 10:
+                    if percipitation[loc, l_time] > 10:
                         if t1 >= 0:
                             cloud = 'cloud_flash'
                         else:
                             cloud = 'cloud_flash_snow'
-                    elif precipitation > 2:
+                    elif percipitation[loc, l_time] > 2:
                         if t1 >= 0:
                             cloud = 'cloud_rain2'
                         else:
                             cloud = 'cloud_snow2'
-                    elif precipitation > 0:
+                    elif percipitation[loc, l_time] > 0:
                         if t1 >= 0:
                             cloud = 'cloud_rain1'
                         else:
                             cloud = 'cloud_snow1'
                     elif updraft > 0:
                         cloud = 'cloud_cumulus'
-                        condensed = 1
+                    condensed = 1
                 elif condensed == 0 and updraft > 0:
                     lift = round(updraft, 1)
             add_thermal(model_datas, height=i, lift= round(lift, 1), clouds=cloud, wind= round(wind_speed[loc, level, l_time]), 
