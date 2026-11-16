@@ -9,5 +9,5 @@ do
     echo "I'm waiting for 8 seconds to cool down..."
     sleep 8
 done
-
+python3 /home/meteoman/icon_ch2/fetch_pressure_radiation.py
 echo "ready :-)"
