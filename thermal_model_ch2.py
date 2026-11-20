@@ -114,11 +114,17 @@ def calculate_thermals( loc, l_time, time_hr):
     # initialize the bottom values
     t0 = temperature[loc, level, l_time]
     h0 = altitude[loc, level, l_time]
-    i = max (math.ceil(h0 / 200) * 200, 800)
+    i = 800
     cloud = ''
     lift = 0.0
     updraft = 0.0
     model_datas = {}
+
+    # prefill lower levels
+    while i < calculation_base:
+        add_thermal(model_datas, height=i, lift= 0.0, clouds='Green', wind= 0, wind_deg= 0)
+        i += 200
+
     # Loop over all levels beginning from 80 down to 39   
     while level > 38:
         level -= 1
@@ -166,8 +172,9 @@ def calculate_thermals( loc, l_time, time_hr):
     #          f"Temp: {temp:.1f} K/100 m, Parcel_t {parcel_temperature[level]:.1f}°C, Parcel_dp {parcel_dewpoint[level]:.1f}°C "
     #          f"Cond= {condensation[level]}, {condensed}, updraft: {updraft:.1f}")
         cloud = ''
+        lift = 0
         if h0 <= i <= h1 and i <= 4000:  # one data point each 200 meters until 4'000 meters
-            if i <= calculation_base:
+            if i <= calculation_base: # add green for lower levels
                 cloud = 'Green'
             else:
                 if condensation[level] == 'yes':

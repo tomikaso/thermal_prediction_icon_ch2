@@ -163,7 +163,6 @@ tr { background-color: aliceblue;} tr:not(:first-child):hover {background-color:
    async function load_potential(){document.getElementById("display_temp").innerHTML = "<h3>loading...</h3>";
                       let x = await fetch('http://localhost:8000/emagrams/thermal_forecast.json');
                       forecast = await x.json();
-                      document.getElementById("display_temp").innerHTML = forecast[0][0][12].cloudcover;
                       setday();
                       setTimeout(function (){display_data(0)}, 1000);
                       }
@@ -184,7 +183,6 @@ function display_data(i) {
         document.getElementById("my-div" + j).className = "button1";
     }
     document.getElementById("my-div" + day).className = "active_button";
-    show_forecast();
     }
 function load_table(l, day){ // loops from 9 o'clock until 20.
   clear_table();
@@ -199,8 +197,27 @@ function load_table(l, day){ // loops from 9 o'clock until 20.
   document.getElementById("pfd" + t).innerHTML = forecast[day][l][t].potential;
   document.getElementById("base" + t).innerHTML = forecast[day][l][t].base;
   show_ema(14);
-  { for (let h = 800; h<=4200; h=h+200)
-							{
+  }
+  document.getElementById("thermal_comment").innerHTML = forecast[day][l][24].comment;
+  if (thermal_wind_sw === "thermal"){display_thermal();} else {display_wind();}
+}
+
+function switch_wind() {
+    console.log(thermal_wind_sw)
+    thermal_wind_switch = document.getElementById("wind_therm_chk").checked;
+    document.getElementById("display_temp").innerHTML = thermal_wind_sw;
+    if (thermal_wind_switch) {
+        thermal_wind_sw = "thermal";
+    } else {
+        thermal_wind_sw = "wind";
+    }
+    setTimeout(function (){load_table(loca, day)}, 200);
+  }
+
+function display_thermal(){l= loca; 
+    for (let t = 9; t <= 20; t++){
+      for (let h = 800; h<=4200; h=h+200)
+							{ 
             if(forecast[day][l][t].model_data[h]?.cl ?? "" != ""){
               cloud = "<img src='svg/" + forecast[day][l][t].model_data[h]?.cl + ".svg'>";
               document.getElementById(h + "-" + t).innerHTML = cloud;
@@ -211,11 +228,8 @@ function load_table(l, day){ // loops from 9 o'clock until 20.
                 }
 							}
             }
+          }
 			}
-
-  }
-  document.getElementById("thermal_comment").innerHTML = forecast[day][l][24].comment;
-}
 
 function display_wind(){
   let l = loca;
@@ -248,9 +262,12 @@ function col(distst){
               let fac = (15625 - (dist - 125)**2) / 260
                 return `rgba(${r}, ${r + fac}, ${r - fac}, 1)`
                 }
-    function show_grid(l) {startgrid = grids[l]; load_table(l, day); loca = l;show_ema(14);}
-  
-    function show_forecast() {}
+function show_grid(l) {startgrid = grids[l]; load_table(l, day); loca = l;show_ema(14); clear_table(); 
+  display_thermal(); set_active_location(l);}
+
+function set_active_location(loc){
+   for (let l = 0; l < maxloc; l++) {document.getElementById("thermal" + l).className = "smov thermal" + l;}
+    document.getElementById("thermal" + loc).className   += " thermal_active";}
 
 function clear_table(){ for (let t = 9; t<=20; t++)
 						{ for (let h = 800; h<=4200; h=h+200)
@@ -315,7 +332,7 @@ function show_ema(lt) {var fd = loca.toString().padStart(2, '0'); var ft = lt.to
 </div><p id="display_temp"></p>
 <div>
     <h3 id="b2">Thermik-Modell</h3>
-    <span>Wind  </span><label class="switch" id="wind_therm_select" onclick="display_wind()" >
+    <span>Wind  </span><label class="switch" id="wind_therm_select" onclick="switch_wind()" >
     <input type="checkbox" id="wind_therm_chk" checked><span class="slider"></span></label><span>  Thermik</span>
     <span id="t_wind">  switch</span>
     <table>
