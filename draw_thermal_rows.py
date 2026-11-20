@@ -8,7 +8,8 @@ fc_day = 0
 start_time = dt.datetime.now()
 init = start_time.strftime("%Y%m%d")
 # init = "20261114"
-path = "data/"
+sytem_path = '/home/meteoman/icon_ch2/'
+path = sytem_path + "data/"
 with open("load_status.json", "r") as file:
     load_status = json.load(file)
 print(f"Last Leadtime: {load_status["leadtime"]}, model run: z{load_status["model_run"]}")
@@ -74,7 +75,7 @@ location_totals = {}
 
 loc = 0
 level = 80
-file_location = "emagrams/"
+file_location = sytem_path + "emagrams/"
 
 while fc_day < 5:    
     while loc < locations.max_locations:

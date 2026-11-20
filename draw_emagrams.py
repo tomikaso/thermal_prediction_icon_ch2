@@ -10,8 +10,8 @@ init = start_time.strftime("%Y%m%d")
 lt_time = 9
 day = lt_time // 24
 
-# sytem_path = '/home/meteoman/icon_ch2/'
-sytem_path = ''
+sytem_path = '/home/meteoman/icon_ch2/'
+# sytem_path = ''
 path = sytem_path + "data/"
 with open(f"{sytem_path}load_status.json", "r") as file:
     load_status = json.load(file)

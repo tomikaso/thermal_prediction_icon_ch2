@@ -26,7 +26,7 @@ def calculate_dew_point(q, h):
     return Td
 
 sytem_path = '/home/meteoman/icon_ch2/'
-sytem_path = ''  # activate for WSL
+#sytem_path = ''  # activate for WSL
 
 with open(f"{sytem_path}load_status.json", "r") as file:
     loaded_data = json.load(file)
@@ -46,11 +46,8 @@ utc_offset = int(start_time.utcoffset().total_seconds() / 3600)
 start_hour = ((start_time.hour - 3 ) // 6) * 6 
 print(f'Starting load at: {start_time}')
 z_time = "latest"
-z_time = "2026-11-15T06:00:00Z"
-start_hour = 9
-
-# sums of sunshine radiation for each location
-radiation_old_sum = [0] * locations.max_locations
+# z_time = "2026-11-18T06:00:00Z"
+# start_hour = 0
 
 if (leadtime_original + loaded_data["model_run"] + utc_offset) % 24 >= 20: # jump to the next day
     leadtime_original = leadtime_original + 12 # jumps from 20:00 to 09:00 next day
@@ -65,6 +62,8 @@ if datei_pfad.is_file():
     wind_direction = np.load(f"{path}wind_direction_icon_ch2_{start_date}.npy")
     cloud_cover = np.load(f"{path}cloudcover_icon_ch2_{start_date}.npy")
     percipitation = np.load(f"{path}percipitation_icon_ch2_{start_date}.npy")
+    radiation = np.load(f"{path}radiation_icon_ch2_{start_date}.npy")
+    pressure = np.load(f"{path}pressure_icon_ch2_{start_date}.npy")
     leadtime = leadtime_original # we are in an ongoing load
 else:
     # set everything up for a new, fresh day :-)
@@ -75,6 +74,8 @@ else:
     wind_direction = np.full((number_of_locations, 81, 120), 0.00, dtype=np.float32) # 81 levels, 14 locations, 120 time steps
     cloud_cover = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
     percipitation = np.full((number_of_locations, 120), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
+    radiation = np.full((number_of_locations, 140), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
+    pressure = np.full((number_of_locations, 140), 0.00, dtype=np.float32) # surface, 14 locations, 120 time steps
     new_day_flag = True
 
     # calculating the leadtimes
@@ -84,6 +85,36 @@ else:
         leadtime = 9 - utc_offset - start_hour + 24
     print(f'Start hour: z{start_hour}, leadtime: {leadtime}')
     leadtime_original = leadtime
+
+# everything, what has to be done once ;-)
+# now get the vertical levels from the ICON-CH2 dataset
+vertical_ch2 = ekd.from_source(
+    "meteoswiss-opendata-constants",
+    collection="ogd-forecasting-icon-ch2",
+    asset="vertical",
+    )
+    
+vertical_fl_ch2 = vertical_ch2.to_fieldlist()
+vertical_fl_ch2.ls()
+    
+ds_hhl_ch2 = vertical_ch2.to_xarray(
+    time_dims=["forecast_reference_time", "step"],
+    squeeze=False
+    )
+print(f"Vertical Levels Object:", leadtime)
+
+# Downward direct short wave radiation flux at surface (mean over forecast time)
+forecast_r = ekd.from_source(
+            "meteoswiss-opendata",
+            collection="ogd-forecasting-icon-ch2",
+            variable="ASOB_S",
+            perturbed=False,
+            ref_time=z_time,
+            lead_time=[
+                dt.timedelta(hours=leadtime - 1)
+            ],
+        )       
+dataset_r0 = forecast_r.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
 
 while leadtime < leadtime_original + 12:  # the new Raspberry can!
 # required data is Temperature
@@ -215,23 +246,39 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
     dataset_per = forecast_per.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
     init_time = dataset_per["forecast_reference_time"].values
     print(f'total percipitaion: {init_time}, Leadtime: {leadtime}') 
-        
-    # now get the vertical levels from the ICON-CH2 dataset
-    vertical_ch2 = ekd.from_source(
-        "meteoswiss-opendata-constants",
-        collection="ogd-forecasting-icon-ch2",
-        asset="vertical",
-    )
-    
-    vertical_fl_ch2 = vertical_ch2.to_fieldlist()
-    vertical_fl_ch2.ls()
-    
-    ds_hhl_ch2 = vertical_ch2.to_xarray(
-        time_dims=["forecast_reference_time", "step"],
-        squeeze=False
+
+    # Downward direct short wave radiation flux at surface (mean over forecast time)
+    forecast_r = ekd.from_source(
+            "meteoswiss-opendata",
+            collection="ogd-forecasting-icon-ch2",
+            variable="ASOB_S",
+            perturbed=False,
+            ref_time=z_time,
+            lead_time=[
+                dt.timedelta(hours=leadtime)
+            ],
         )
-    
-    print(f"Vertical Levels Object:", leadtime)
+        
+    dataset_r = forecast_r.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
+    init_time = dataset_r["forecast_reference_time"].values
+    print(f'Init Time Radiation: {init_time}, Leadtime: {leadtime}')
+
+    # pressure reduced to sea level
+    forecast_pressure = ekd.from_source(
+                    "meteoswiss-opendata",
+                    collection="ogd-forecasting-icon-ch2",
+                    variable="PMSL",
+                    perturbed=False,
+                    ref_time=z_time,
+                    lead_time=[
+                        dt.timedelta(hours=leadtime)
+                    ],
+                )
+                
+    dataset_pressure = forecast_pressure.to_xarray(time_dims=["forecast_reference_time", "step"], squeeze=False)
+    init_time = dataset_pressure["forecast_reference_time"].values
+    print(f'pressure to sea level: {init_time}, Leadtime: {leadtime}')
+           
     
     # loop through all locations and extract the temperature and altitude for each level
     loc = 0
@@ -245,6 +292,16 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
         next_index = int(np.argmin(distanz.data))
 
         # Measures without levels
+        # direct radiation
+        rad0 = dataset_r0["avg_snswrf"].sel(values=next_index)
+        rad = dataset_r["avg_snswrf"].sel(values=next_index)
+        current_rad = rad.values.item() * leadtime - rad0.values.item() * (leadtime - 1) # the delta of total sum
+        radiation[loc, leadtime + load_hour + utc_offset] = current_rad
+                
+        # pressure at sea level
+        press = dataset_pressure["prmsl"].sel(values=next_index)
+        pressure[loc, leadtime + load_hour + utc_offset] = press.values.item() / 100 # hPa
+
         # Cloud-Cover High
         cloud_h = dataset_cch["ccl"].sel(values=next_index)
         cloud_m = dataset_ccm["ccl"].sel(values=next_index)
@@ -288,6 +345,7 @@ while leadtime < leadtime_original + 12:  # the new Raspberry can!
         now = dt.datetime.now()
         print(f'Next Objects at: {now}')
         loc = loc + 1
+    dataset_r0 = dataset_r # update the previous radiation
     # printing results
     print(f"Leadtime: {leadtime}, z{load_hour}saving temperature, altitude and dewpoint to numpy arrays")
     leadtime = leadtime +1
@@ -300,6 +358,8 @@ np.save(f"{path}wind_speed_icon_ch2_{start_date}.npy", wind_speed)
 np.save(f"{path}wind_direction_icon_ch2_{start_date}.npy", wind_direction)
 np.save(f"{path}cloudcover_icon_ch2_{start_date}.npy", cloud_cover)
 np.save(f"{path}percipitation_icon_ch2_{start_date}.npy", percipitation)
+np.save(f"{path}radiation_icon_ch2_{start_date}.npy", radiation)
+np.save(f"{path}pressure_icon_ch2_{start_date}.npy", pressure)
 
 load_status = {
     "status": "ok",

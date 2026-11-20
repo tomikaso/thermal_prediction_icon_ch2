@@ -9,5 +9,12 @@ do
     echo "I'm waiting for 8 seconds to cool down..."
     sleep 8
 done
-python3 /home/meteoman/icon_ch2/fetch_pressure_radiation.py
-echo "ready :-)"
+echo "all data fetched"
+python3 /home/meteoman/icon_ch2/draw_emagrams.py
+echo "emagrams plotted"
+sleep 8
+python3 /home/meteoman/icon_ch2/draw_thermal_rows.py
+echo "thermals calculated"
+sleep 8
+python3 /home/meteoman/icon_ch2/file_transfer_dczo.py
+echo "everything sent to DCZO, ready :-)"
