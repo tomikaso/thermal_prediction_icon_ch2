@@ -125,7 +125,7 @@ input:checked + .slider {
 }
 
 input:focus + .slider {
-  box-shadow: 0 0 1px; #b00;
+  box-shadow: 0 0 1px;
 }
 
 input:checked + .slider:before {
@@ -174,9 +174,9 @@ tr { background-color: aliceblue;} tr:not(:first-child):hover {background-color:
 }
 function display_data(i) {
     for (let l = 0; l < maxloc; l++) {
-        document.getElementById("thermal" + l).style.backgroundColor = col(forecast[day][l][12]?.potential ??0 );
-        document.getElementById("thermal" + l).innerHTML = "<a class='km'>" + forecast[day][l][12].potential + "</a>";
-        load_table(0, 0);
+        document.getElementById("thermal" + l).style.backgroundColor = col(forecast[day][l][24]?.potential ??0 );
+        document.getElementById("thermal" + l).innerHTML = "<a class='km'>" + forecast[day][l][24].potential + "</a>";
+        load_table(day, loca);
     }
     day = i;
     document.getElementById("day_indicator").innerHTML = models[day];
@@ -192,17 +192,29 @@ function load_table(l, day){ // loops from 9 o'clock until 20.
   document.getElementById("sun" + t).innerHTML = forecast[day][l][t].sun;
   document.getElementById("wind" + t).innerHTML = forecast[day][l][t].wind;
   document.getElementById("cloud" + t).innerHTML = forecast[day][l][t].cloudcover;
-   document.getElementById("lift" + t).innerHTML = forecast[day][l][t].lift;
+  if (forecast[day][l][t].lift > 0){
+  document.getElementById("lift" + t).innerHTML = forecast[day][l][t].lift;
+  document.getElementById("lift" + t).style.backgroundColor = liftcol(forecast[day][l][t].lift ?? 0);
+  }
+  document.getElementById("pfd" + t).innerHTML = forecast[day][l][t].potential;
   document.getElementById("base" + t).innerHTML = forecast[day][l][t].base;
-
+  show_ema(14);
   { for (let h = 800; h<=4200; h=h+200)
 							{
+            if(forecast[day][l][t].model_data[h]?.cl ?? "" != ""){
+              cloud = "<img src='svg/" + forecast[day][l][t].model_data[h]?.cl + ".svg'>";
+              document.getElementById(h + "-" + t).innerHTML = cloud;
+            }else{
+              if(forecast[day][l][t].model_data[h]?.th ?? 0 > 0){
 						document.getElementById(h + "-" + t).innerHTML = forecast[day][l][t].model_data[h]?.th ?? "";
 						document.getElementById(h + "-" + t).style.backgroundColor = liftcol(forecast[day][l][t].model_data[h]?.th ?? 0);
+                }
 							}
-						}
+            }
+			}
 
   }
+  document.getElementById("thermal_comment").innerHTML = forecast[day][l][24].comment;
 }
 
 function display_wind(){
@@ -285,20 +297,20 @@ function show_ema(lt) {var fd = loca.toString().padStart(2, '0'); var ft = lt.to
 
 <div class="layout-container"><img id="ema-svg" src="emagrams/emagram_loc00_d0lt10.svg">
   <table style="width:550px">
-    <tr><th>Zeit<br>LT</th><th>Wind<br>km/h</th><th>Sonne<br>%</th><th>Wolken<br>l-m-h</th><th>Lift<br>m/s</th><th>Base/Top<br>m</th></tr>
-    <tr onmouseover="show_ema(9)"><td>09:00</td><td id="wind9">4</td><td id="sun9"></td><td id="cloud9">8-8-0</td><td id="lift9"></td><td id="base9"></td></tr>
-    <tr onmouseover="show_ema(10)"><td>10:00</td><td id="wind10">4</td><td id="sun10"></td><td id="cloud10">8-8-0</td><td id="lift10"></td><td id="base10"></td></tr>
-    <tr onmouseover="show_ema(11)"><td>11:00</td><td id="wind11">0</td><td id="sun11"></td><td id="cloud11">8-8-0</td><td id="lift11"></td><td id="base11"></td></tr>
-    <tr onmouseover="show_ema(12)"><td>12:00</td><td id="wind12">5</td><td id="sun12"></td><td id="cloud12">8-8-4</td><td id="lift12"></td><td id="base12"></td></tr>
-    <tr onmouseover="show_ema(13)"><td>13:00</td><td id="wind13">5</td><td id="sun13"></td><td id="cloud13">8-8-0</td><td id="lift13"></td><td id="base13"></td></tr>
-    <tr onmouseover="show_ema(14)"><td>14:00</td><td id="wind14">5</td><td id="sun14"></td><td id="cloud14">8-8-1</td><td id="lift14"></td><td id="base14"></td></tr>
-    <tr onmouseover="show_ema(15)"><td>15:00</td><td id="wind15">5</td><td id="sun15"></td><td id="cloud15">8-8-0</td><td id="lift15"></td><td id="base15"></td></tr>
-    <tr onmouseover="show_ema(16)"><td>16:00</td><td id="wind16">5</td><td id="sun16"></td><td id="cloud16">8-8-0</td><td id="lift16"></td><td id="base16"></td></tr>
-    <tr onmouseover="show_ema(17)"><td>17:00</td><td id="wind17">5</td><td id="sun17"></td><td id="cloud17">8-8-0</td><td id="lift17"></td><td id="base17"></td></tr>
-    <tr onmouseover="show_ema(18)"><td>18:00</td><td id="wind18">5</td><td id="sun18"></td><td id="cloud18">8-8-0</td><td id="lift18"></td><td id="base18"></td></tr>
-    <tr onmouseover="show_ema(19)"><td>19:00</td><td id="wind19">4</td><td id="sun19"></td><td id="cloud19">8-8-0</td><td id="lift19"></td><td id="base19"></td></tr>
-    <tr onmouseover="show_ema(20)"><td>20:00</td><td id="wind20">0</td><td id="sun20"></td><td id="cloud20">8-8-0</td><td id="lift20"></td><td id="base20"></td></tr>
-    <tr><td id="thermal_comment" colspan="6">Gute Thermik</td></tr>
+    <tr><th>Zeit<br>LT</th><th>Wind<br>km/h</th><th>Sonne<br>%</th><th>Wolken<br>l-m-h</th><th>Lift<br>m/s</th><th>PFD<br>km</th><th>Base/Top<br>m</th></tr>
+    <tr onmouseover="show_ema(9)"><td>09:00</td><td id="wind9">4</td><td id="sun9"></td><td id="cloud9">8-8-0</td><td id="lift9"></td><td id="pfd9"></td><td id="base9"></td></tr>
+    <tr onmouseover="show_ema(10)"><td>10:00</td><td id="wind10">4</td><td id="sun10"></td><td id="cloud10">8-8-0</td><td id="lift10"></td><td id="pfd10"></td><td id="base10"></td></tr>
+    <tr onmouseover="show_ema(11)"><td>11:00</td><td id="wind11">0</td><td id="sun11"></td><td id="cloud11">8-8-0</td><td id="lift11"></td><td id="pfd11"></td><td id="base11"></td></tr>
+    <tr onmouseover="show_ema(12)"><td>12:00</td><td id="wind12">5</td><td id="sun12"></td><td id="cloud12">8-8-4</td><td id="lift12"></td><td id="pfd12"></td><td id="base12"></td></tr>
+    <tr onmouseover="show_ema(13)"><td>13:00</td><td id="wind13">5</td><td id="sun13"></td><td id="cloud13">8-8-0</td><td id="lift13"></td><td id="pfd13"></td><td id="base13"></td></tr>
+    <tr onmouseover="show_ema(14)"><td>14:00</td><td id="wind14">5</td><td id="sun14"></td><td id="cloud14">8-8-1</td><td id="lift14"></td><td id="pfd14"></td><td id="base14"></td></tr>
+    <tr onmouseover="show_ema(15)"><td>15:00</td><td id="wind15">5</td><td id="sun15"></td><td id="cloud15">8-8-0</td><td id="lift15"></td><td id="pfd15"></td><td id="base15"></td></tr>
+    <tr onmouseover="show_ema(16)"><td>16:00</td><td id="wind16">5</td><td id="sun16"></td><td id="cloud16">8-8-0</td><td id="lift16"></td><td id="pfd16"></td><td id="base16"></td></tr>
+    <tr onmouseover="show_ema(17)"><td>17:00</td><td id="wind17">5</td><td id="sun17"></td><td id="cloud17">8-8-0</td><td id="lift17"></td><td id="pfd17"></td><td id="base17"></td></tr>
+    <tr onmouseover="show_ema(18)"><td>18:00</td><td id="wind18">5</td><td id="sun18"></td><td id="cloud18">8-8-0</td><td id="lift18"></td><td id="pfd18"></td><td id="base18"></td></tr>
+    <tr onmouseover="show_ema(19)"><td>19:00</td><td id="wind19">4</td><td id="sun19"></td><td id="cloud19">8-8-0</td><td id="lift19"></td><td id="pfd19"></td><td id="base19"></td></tr>
+    <tr onmouseover="show_ema(20)"><td>20:00</td><td id="wind20">0</td><td id="sun20"></td><td id="cloud20">8-8-0</td><td id="lift20"></td><td id="pfd20"></td><td id="base20"></td></tr>
+    <tr><td id="thermal_comment" colspan="7">Gute Thermik</td></tr>
   </table>
 </div><p id="display_temp"></p>
 <div>

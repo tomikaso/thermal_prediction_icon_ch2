@@ -82,28 +82,28 @@ while fc_day < 5:
         print(f"Day {fc_day}: Location {loc}: {locations.name_start[loc]}")
         total_distance = 0
         freezing_level = 400
-        lt_time = 9 + fc_day * 24
-        while lt_time <= 20 + fc_day * 24:
+        l_time = 9 + fc_day * 24
+        while l_time <= 20 + fc_day * 24:
 
             # here we start. We are in which level?
             level = 38
-            while altitude[loc, level, lt_time] > locations.start_height[loc]:
+            while altitude[loc, level, l_time] > locations.start_height[loc]:
                 level += 1
-            wind_start = int(wind_speed[loc, level, lt_time])
-            wind_dir_start = wind_direction[loc, level, lt_time]
-            wind_top = int(wind_speed[loc, level-5, lt_time])
-            wind_high = int(wind_speed[loc, level-10, lt_time])
-            wind_dir_high = wind_direction[loc-10, level, lt_time]
+            wind_start = int(wind_speed[loc, level, l_time])
+            wind_dir_start = wind_direction[loc, level, l_time]
+            wind_top = int(wind_speed[loc, level-5, l_time])
+            wind_high = int(wind_speed[loc, level-10, l_time])
+            wind_dir_high = wind_direction[loc-10, level, l_time]
 
 
-            sun = round(radiation[loc,lt_time]/800 * 100) # radiation in % of possible maximum
-            cch = int (cloudcover[loc,lt_time] / 100)
-            ccm = int ((cloudcover[loc,lt_time] % 100) / 10)
-            ccl = int ((cloudcover[loc,lt_time] % 10) / 1)
+            sun = round(radiation[loc,l_time]/800 * 100) # radiation in % of possible maximum
+            cch = int (cloudcover[loc,l_time] / 100)
+            ccm = int ((cloudcover[loc,l_time] % 100) / 10)
+            ccl = int ((cloudcover[loc,l_time] % 10) / 1)
             cc = f'{ccl}-{ccm}-{cch}'
 
             # here comes the call of the thermal model
-            model_result, best_lift, base = thermal_model_ch2.calculate_thermals(loc, lt_time, lt_time % 24)
+            model_result, best_lift, base = thermal_model_ch2.calculate_thermals(loc, l_time, l_time % 24)
             # calculate the PFD
             distance = 0
             if best_lift >= 1:  # root-function gets 1 with a base of 2'000 meters
@@ -114,20 +114,20 @@ while fc_day < 5:
             total_distance += distance
 
             # write to the JSON
-            add_entry(thermal_data, fc_day, loc, lt_time, sun, cc,     
+            add_entry(thermal_data, fc_day, loc, l_time % 24, sun, cc,     
                 lift=str(best_lift),
                 base=str(base),
                 wind=str(wind_start) + " " + wind_dir_str(wind_dir_start),
                 pfd = distance,
                 model_datas=model_result,
             )
-            lt_time += 1
+            l_time += 1
 
         # getting the freezing level height
         lv = 80 # beginning at ground level
-        while lv > 20 and temperature[loc, lv, lt_time - 7] > 0:
+        while lv > 20 and temperature[loc, lv, l_time - 7] > 0:
             lv = lv - 1
-        freezing_level = int(altitude[loc, lv, lt_time - 7])
+        freezing_level = int(altitude[loc, lv, l_time - 7])
 
         # add location summaries
         location_totals = {

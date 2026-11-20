@@ -32,6 +32,9 @@ def rh_from_tdew(temp_air, temp_dew):
     es = 6.112 * 2.718281 ** ((17.62 * temp_dew) / (243.12 + temp_dew))
     return es / e
 
+# when is sunset ;-)
+sunset = {1: 17, 2: 18, 3: 19, 4: 20, 5: 21, 6: 22, 7: 21, 8: 20, 9: 19, 10: 18, 11: 17, 12: 16}
+
 fc_day = 0
 start_time = datetime.now()
 init = start_time.strftime("%Y%m%d")
@@ -199,5 +202,14 @@ def calculate_thermals( loc, l_time, time_hr):
         # prepare for the next level
         t0 = t1
         h0 = h1
-        
+    # append cirrus: just one Line on 4'200 meter
+    moon = ''
+    if time_hr >= sunset[int(start_time.strftime('%m'))]:  # take the night-symbols after sunset
+        moon = '_night'
+    if int ((cloudcover[loc,l_time] % 100) / 10) < 2: # returns the cloudcover mid.
+        cloud = 'cirrus' + moon + '0' + str(int (cloudcover[loc,l_time] / 100)) # cloud high
+    else:
+        cloud = 'stratus' + moon + '0' + str(int ((cloudcover[loc,l_time] % 100) / 10)) # cloud mid
+    add_thermal(model_datas, height=4200, lift= 0, clouds=cloud, wind= round(wind_speed[loc, level, l_time]), 
+                            wind_deg= round(wind_direction[loc, level, l_time]))  
     return model_datas, best_lift, base_top
