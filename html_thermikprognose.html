@@ -1,0 +1,656 @@
+<style>
+.km {
+  font-size: 14px;
+  color: #444;
+}
+.km:hover {
+  text-decoration: none;
+  color: #888;
+}
+.overview {
+  position: relative;
+    width: 100%;
+  padding-top: 59%;
+  background-color: lightgreen;
+  background-image: url('/images/thomaskamps/multitherm/swiss_outline_gr.png');
+  background-size: 100%;
+  background-repeat: no-repeat;
+  margin: 0px;
+  border-radius: 0px;
+}
+.smov {position: absolute; width: 26px; height: 26px; margin: 0px; padding: 0px 0px 0px 0px; border-radius: 13px; border: 2px solid gainsboro; line-height: normal; text-align: center; background-color: lightgreen; padding-inline-start: 1px;}
+.smov:hover {border-color: red;}
+.thermal0 {
+  left: 58%;
+  top:  23%;
+  }
+.thermal1 {
+  left: 55%;
+  top:  74%;
+ }
+.thermal2 {
+  left: 63%;
+  top:  31%;
+  }
+.thermal3 {
+  left: 73%;
+  top:  40%;
+ }
+.thermal4 {
+  left: 31%;
+  top:  24%;
+ }
+.thermal5 {
+  left: 83%;
+  top:  50%;
+ }
+.thermal6 {
+  left: 39%;
+  top:  65%;
+  }
+.thermal7 {
+  left: 32%;
+  top:  50%;
+ }
+.thermal8 {
+  left: 60%;
+  top:  40%;
+ }
+.thermal9 {
+  left: 57%;
+  top:  61%;
+  }
+.thermal10 {
+  left: 69%; top:  21%;
+  }
+.thermal11 {
+  left: 55%; top:  28%;
+ }
+.thermal12 {
+  left: 51%; top:  29%;
+ }
+.thermal13 {
+  left: 50%; top:  40%;
+ }    
+.button1 {  width: 84px;   height: 36px; background-color: #EEF6FA;  margin: 4px;
+   			border-radius: 5px;   font-size: 13px; color: #314483; cursor: pointer;
+   			}
+.button1:hover {color: #b00;}
+.active_button {width: 84px;  height: 36px;  border-color: #b00;   margin: 4px;
+ 			border-radius: 5px; font-size: 13px; color: #b00;}
+.thermal_active {border-color: #b00; color: #b00;}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 17px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 17px;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 13px;
+  width: 13px;
+  left: 2px;
+  bottom: 2px;
+  border-radius: 50%;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #b00;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(13px);
+  -ms-transform: translateX(13px);
+  transform: translateX(13px);
+}
+.wind_font {
+  font-size: 13px;
+  color: dimgrey;
+  padding: 2px 2px 8px 2px;
+}
+.emagramm-layout {
+    display: grid;
+    grid-template-columns: 55% 45%;
+    gap: 20px;
+    align-items: start;
+}
+
+.emagramm img {
+    width: 100%;
+    height: auto;
+}
+
+.thermik-table {
+    min-width: 0;
+    overflow-x: auto;
+}
+@media (max-width: 700px) {
+    .emagramm-layout {
+        grid-template-columns: 1fr;
+    }
+    .wind_font {
+        font-size: 8px;
+        color: dimgrey;
+        padding: 0px 0px 0px 0px;
+    }
+}
+table, td, th, a, p {font-size: 9pt; padding: 3pt;} 
+tr { background-color: aliceblue;} tr:not(:first-child):hover {background-color: skyblue;} 
+</style>
+<body onload="load_potential()">
+
+<script>
+   let day = 0;
+   let loca = 0;
+   var startgrid;
+   var potarray = new Array();
+   var thermal_wind_sw = "thermal";
+   const weekday = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag", "Montag","Dienstag","Mittwoch","Donnerstag"];
+   const grids = ["Scheidegg", "Locarno", "Hüsliberg", "Pany", "Solothurn", "Scuol", "Fiesch", "Niesen", "Braunwald-Gumen", "Cari", "Ebenalp", "Galgenen", "Zugerberg", "Engelberg"];
+   const wind_color = ["limegreen", "springgreen", "lawngreen", "greenyellow", "yellow", "gold", "orange", "orangered", "tomato", "lightcoral", "indianred", "orchid", "darkorchid"];
+   const d = new Date();
+   const maxloc = 14;
+   var forecast = {};
+   function datehour() {return d.getHours() + 100 * d.getDate() + 10000 * d.getMonth();}
+   async function load_potential(){
+                      let x = await fetch('/images/thomaskamps/icon_ch2/thermal_forecast.json?' + datehour());
+                      forecast = await x.json();
+                      setday();
+                      setTimeout(function (){display_data(0)}, 1000);
+                      }
+   function setday(){day = 0; startgrid = "Scheidegg";
+                     document.getElementById("my-div0").innerHTML = "Heute";
+                     for (let j = 1; j <= 4; j++) {
+                          document.getElementById("my-div" + j).innerHTML = weekday[d.getDay() + j];}
+}
+function display_data(i) {
+    day = i;
+    for (let l = 0; l < maxloc; l++) {
+        document.getElementById("thermal" + l).style.backgroundColor = col(forecast[day][l][24]?.potential ??0 );
+        document.getElementById("thermal" + l).innerHTML = "<a class='km'>" + forecast[day][l][24].potential + "</a>";
+    }
+    load_table(loca, day);
+    for (let j = 0; j <= 4; j++) {
+        document.getElementById("my-div" + j).className = "button1";
+    }
+    document.getElementById("my-div" + day).className = "active_button";
+    }
+function load_table(l, day){ // loops from 9 o'clock until 20.
+  clear_table();
+  for (let t = 9; t <= 20; t++) {
+  document.getElementById("sun" + t).innerHTML = forecast[day][l][t].sun;
+  document.getElementById("wind" + t).innerHTML = forecast[day][l][t].wind;
+  document.getElementById("cloud" + t).innerHTML = forecast[day][l][t].cloudcover;
+  document.getElementById("lift" + t).innerHTML = "";
+  document.getElementById("lift" + t).style.backgroundColor = "";
+  if (Number.isInteger(forecast[day][l][t].lift) || forecast[day][l][t].lift > 0){
+  document.getElementById("lift" + t).innerHTML = forecast[day][l][t].lift;
+  document.getElementById("lift" + t).style.backgroundColor = liftcol(forecast[day][l][t].lift ?? 0);
+  } else if (Number(forecast[day][l][t].lift) != 0) 
+    {document.getElementById("lift" + t).innerHTML = forecast[day][l][t].lift; }
+  document.getElementById("pfd" + t).innerHTML = forecast[day][l][t].potential;
+  document.getElementById("base" + t).innerHTML = forecast[day][l][t].base;
+  show_ema(14);
+  }
+  document.getElementById("thermal_comment").innerHTML = forecast[day][l][24].comment;
+  document.getElementById("loc_label").innerHTML = grids[loca] + forecast[day][loca][24].modelrun;
+  if (thermal_wind_sw === "thermal"){display_thermal();} else {display_wind();}
+}
+
+function switch_wind() {
+    console.log(thermal_wind_sw)
+    thermal_wind_switch = document.getElementById("wind_therm_chk").checked;
+    if (thermal_wind_switch) {
+        thermal_wind_sw = "thermal";
+    } else {
+        thermal_wind_sw = "wind";
+    }
+    setTimeout(function (){load_table(loca, day)}, 200);
+  }
+
+function display_thermal(){l= loca; 
+    for (let t = 9; t <= 20; t++){
+      for (let h = 800; h<=4200; h=h+200)
+							{ 
+            if(forecast[day][l][t].model_data[h]?.cl ?? "" != ""){
+              cloud = "<img src='/images/thomaskamps/svg/" + forecast[day][l][t].model_data[h]?.cl + ".svg?'"+ datehour()+ ">";
+              document.getElementById(h + "-" + t).innerHTML = cloud;
+            }else{
+              if(forecast[day][l][t].model_data[h]?.th ?? 0 > 0){
+						document.getElementById(h + "-" + t).innerHTML = forecast[day][l][t].model_data[h]?.th ?? "";
+						document.getElementById(h + "-" + t).style.backgroundColor = liftcol(forecast[day][l][t].model_data[h]?.th ?? 0);
+                }
+							}
+            }
+          }
+			}
+
+function display_wind(){
+  let l = loca;
+  for (let t = 9; t <= 20; t++) {
+    for (let h = 800; h<=4200; h=h+200)
+							{
+						document.getElementById(h + "-" + t).innerHTML = arrow_svg(forecast[day][l][t].model_data[h]?.wd ?? 0) + "<span class='wind_font'>" + (forecast[day][l][t].model_data[h]?.wi ?? 0)+ "</span>";
+						document.getElementById(h + "-" + t).style.backgroundColor = wind_color[Math.min(Math.floor((forecast[day][l][t].model_data[h]?.wi ?? 0)/5), 12)];
+							}
+          }
+        }
+function arrow_svg(angle){
+      var pi180 = Math.PI / 180;
+      let r = 5
+      let padd = 0
+      let ax = r + padd - Math.sin(angle * pi180) * r;
+      let ay = r + padd + Math.cos(angle * pi180) * r;
+      let a2x = r + padd - Math.sin((angle + 180) * pi180) * r * 0.2;
+      let a2y = r + padd + Math.cos((angle + 180) * pi180) * r * 0.2;
+      let bx = r + padd - Math.sin((angle + 130) * pi180) * r * 0.8;
+      let by = r + padd + Math.cos((angle + 130) * pi180) * r * 0.8;
+      let cx = r + padd - Math.sin((angle - 130) * pi180) * r * 0.8;
+      let cy = r + padd + Math.cos((angle - 130) * pi180) * r * 0.8;
+      return `<svg height="9" width="9" xmlns=http://www.w3.org/2000/svg><polygon points="${cx},${cy} ${ax},${ay} ${bx},${by} ${a2x},${a2y}" fill = "grey"></svg>`}
+function col(distst){
+          		var dist = parseInt(distst);
+                if (dist > 250 ){dist = 250;}
+          		dist = dist * 0.8;
+                let r = 255 - dist;
+              let fac = (15625 - (dist - 125)**2) / 260
+                return `rgba(${r}, ${r + fac}, ${r - fac}, 1)`
+                }
+function show_grid(l) {startgrid = grids[l]; load_table(l, day); loca = l;show_ema(14); 
+  clear_table(); display_thermal(); set_active_location(l);}
+
+function set_active_location(loc){
+   for (let l = 0; l < maxloc; l++) {document.getElementById("thermal" + l).className = "smov thermal" + l;}
+    document.getElementById("thermal" + loc).className   += " thermal_active";}
+
+function clear_table(){ for (let t = 9; t<=20; t++)
+						{ for (let h = 800; h<=4200; h=h+200)
+							{
+						document.getElementById(h + "-" + t).innerHTML = "";
+						document.getElementById(h + "-" + t).style.backgroundColor = "white";
+							}
+						}
+					}
+function liftcol(lift){
+          		var l = parseFloat(lift);
+                if (l > 5 ){l = 5;}
+          		l = l * 30;
+                let r = 255 - l;
+                let fac = (15625 - (l - 125)**2) / 260;
+                return `rgba(${r}, ${r + fac}, ${r - fac}, 1)`
+                }
+
+function show_ema(lt) {var fd = loca.toString().padStart(2, '0'); var ft = lt.toString().padStart(2, '0'); dh = datehour();
+  document.getElementById("ema-svg").src = `/images/thomaskamps/icon_ch2/emagram_loc${fd}_d${day}lt${ft}.svg?${dh}`;}
+</script>
+<div class="overview" id="overview">
+    <button class="thermal1 smov" id="thermal1" onclick="show_grid(1)"><a class="km">LO</a></button>
+    <button class="thermal8 smov" id="thermal8" onclick="show_grid(8)"><a class="km">BR</a></button>
+    <button class="thermal2 smov" id="thermal2" onclick="show_grid(2)"><a class="km">HÜ</a></button>
+    <button class="thermal3 smov" id="thermal3" onclick="show_grid(3)"><a class="km">PY</a></button>
+    <button class="thermal4 smov" id="thermal4" onclick="show_grid(4)"><a class="km">SO</a></button>
+    <button class="thermal5 smov" id="thermal5" onclick="show_grid(5)"><a class="km">SC</a></button>
+    <button class="thermal6 smov" id="thermal6" onclick="show_grid(6)"><a class="km">FI</a></button>
+    <button class="thermal7 smov" id="thermal7" onclick="show_grid(7)"><a class="km">NI</a></button>
+    <button class="thermal9 smov" id="thermal9" onclick="show_grid(9)"><a class="km">CA</a></button>
+    <button class="thermal10 smov" id="thermal10" onclick="show_grid(10)"><a class="km">EA</a></button>
+    <button class="thermal12 smov" id="thermal12" onclick="show_grid(12)"><a class="km">ZG</a></button>
+    <button class="thermal11 smov" id="thermal11" onclick="show_grid(11)"><a class="km">GA</a></button>
+    <button class="thermal13 smov" id="thermal13" onclick="show_grid(13)"><a class="km">EB</a></button>
+    <button class="thermal0 smov" id="thermal0" onclick="show_grid(0)"><a class="km">AS</a></button>
+</div>
+<button class="button1" id="my-div0" onclick="display_data(0)">Heute</button>
+<button class="button1" id="my-div1" onclick="display_data(1)">Tag 1</button>
+<button class="button1" id="my-div2" onclick="display_data(2)">Tag 2</button>
+<button class="button1" id="my-div3" onclick="display_data(3)">Tag 3</button>
+<button class="button1" id="my-div4" onclick="display_data(4)">Tag 4</button>
+
+<div >
+  <h3 id="loc_label">Location</h3>
+   
+   
+    <div >
+  <table>
+    <tr>
+        <th rowspan="14">
+              <img class="emagram_svg" id="ema-svg" src="emagrams/emagram_loc00_d0lt10.svg" width="250">
+              </th>
+
+        
+        
+        <th>Zeit<br>LT</th><th>Wind<br>km/h</th><th>Sonne<br>%</th><th>Wolken<br>l-m-h</th><th>Lift<br>m/s</th><th>PFD<br>km</th><th>Base/Top<br>m</th></tr>
+    <tr onmouseover="show_ema(9)"><td>09:00</td><td id="wind9">4</td><td id="sun9"></td><td id="cloud9">8-8-0</td><td id="lift9"></td><td id="pfd9"></td><td id="base9"></td></tr>
+    <tr onmouseover="show_ema(10)"><td>10:00</td><td id="wind10">4</td><td id="sun10"></td><td id="cloud10">8-8-0</td><td id="lift10"></td><td id="pfd10"></td><td id="base10"></td></tr>
+    <tr onmouseover="show_ema(11)"><td>11:00</td><td id="wind11">0</td><td id="sun11"></td><td id="cloud11">8-8-0</td><td id="lift11"></td><td id="pfd11"></td><td id="base11"></td></tr>
+    <tr onmouseover="show_ema(12)"><td>12:00</td><td id="wind12">5</td><td id="sun12"></td><td id="cloud12">8-8-4</td><td id="lift12"></td><td id="pfd12"></td><td id="base12"></td></tr>
+    <tr onmouseover="show_ema(13)"><td>13:00</td><td id="wind13">5</td><td id="sun13"></td><td id="cloud13">8-8-0</td><td id="lift13"></td><td id="pfd13"></td><td id="base13"></td></tr>
+    <tr onmouseover="show_ema(14)"><td>14:00</td><td id="wind14">5</td><td id="sun14"></td><td id="cloud14">8-8-1</td><td id="lift14"></td><td id="pfd14"></td><td id="base14"></td></tr>
+    <tr onmouseover="show_ema(15)"><td>15:00</td><td id="wind15">5</td><td id="sun15"></td><td id="cloud15">8-8-0</td><td id="lift15"></td><td id="pfd15"></td><td id="base15"></td></tr>
+    <tr onmouseover="show_ema(16)"><td>16:00</td><td id="wind16">5</td><td id="sun16"></td><td id="cloud16">8-8-0</td><td id="lift16"></td><td id="pfd16"></td><td id="base16"></td></tr>
+    <tr onmouseover="show_ema(17)"><td>17:00</td><td id="wind17">5</td><td id="sun17"></td><td id="cloud17">8-8-0</td><td id="lift17"></td><td id="pfd17"></td><td id="base17"></td></tr>
+    <tr onmouseover="show_ema(18)"><td>18:00</td><td id="wind18">5</td><td id="sun18"></td><td id="cloud18">8-8-0</td><td id="lift18"></td><td id="pfd18"></td><td id="base18"></td></tr>
+    <tr onmouseover="show_ema(19)"><td>19:00</td><td id="wind19">4</td><td id="sun19"></td><td id="cloud19">8-8-0</td><td id="lift19"></td><td id="pfd19"></td><td id="base19"></td></tr>
+    <tr onmouseover="show_ema(20)"><td>20:00</td><td id="wind20">0</td><td id="sun20"></td><td id="cloud20">8-8-0</td><td id="lift20"></td><td id="pfd20"></td><td id="base20"></td></tr>
+    <tr><td id="thermal_comment" colspan="7">Gute Thermik</td></tr>
+  </table>
+</div></div>
+<div>
+    <h3 id="b2">Thermik-Modell</h3>
+    <span>Wind  </span><label class="switch" id="wind_therm_select" onclick="switch_wind()" >
+    <input type="checkbox" id="wind_therm_chk" checked><span class="slider"></span></label><span>  Thermik</span>
+    <span id="t_wind">  switch</span>
+    <table>
+        <tr>
+            <th>Cloud</th>
+            <td id="4200-9"></td>
+            <td id="4200-10"></td>
+            <td id="4200-11"></td>
+            <td id="4200-12"></td>
+            <td id="4200-13"></td>
+            <td id="4200-14"></td>
+            <td id="4200-15"></td>
+            <td id="4200-16"></td>
+            <td id="4200-17"></td>
+            <td id="4200-18"></td>
+            <td id="4200-19"></td>
+            <td id="4200-20"></td>
+        </tr>
+        <tr>
+            <th>4'000</th>
+            <td id="4000-9"></td>
+            <td id="4000-10"></td>
+            <td id="4000-11"></td>
+            <td id="4000-12"></td>
+            <td id="4000-13"></td>
+            <td id="4000-14"></td>
+            <td id="4000-15"></td>
+            <td id="4000-16"></td>
+            <td id="4000-17"></td>
+            <td id="4000-18"></td>
+            <td id="4000-19"></td>
+            <td id="4000-20"></td>
+        </tr>
+        <tr>
+            <th>3'800</th>
+            <td id="3800-9"></td>
+            <td id="3800-10"></td>
+            <td id="3800-11"></td>
+            <td id="3800-12"></td>
+            <td id="3800-13"></td>
+            <td id="3800-14"></td>
+            <td id="3800-15"></td>
+            <td id="3800-16"></td>
+            <td id="3800-17"></td>
+            <td id="3800-18"></td>
+            <td id="3800-19"></td>
+            <td id="3800-20"></td>
+        </tr>
+        <tr>
+            <th>3'600</th>
+            <td id="3600-9"></td>
+            <td id="3600-10"></td>
+            <td id="3600-11"></td>
+            <td id="3600-12"></td>
+            <td id="3600-13"></td>
+            <td id="3600-14"></td>
+            <td id="3600-15"></td>
+            <td id="3600-16"></td>
+            <td id="3600-17"></td>
+            <td id="3600-18"></td>
+            <td id="3600-19"></td>
+            <td id="3600-20"></td>
+        </tr>
+        <tr>
+            <th>3'400</th>
+            <td id="3400-9"></td>
+            <td id="3400-10"></td>
+            <td id="3400-11"></td>
+            <td id="3400-12"></td>
+            <td id="3400-13"></td>
+            <td id="3400-14"></td>
+            <td id="3400-15"></td>
+            <td id="3400-16"></td>
+            <td id="3400-17"></td>
+            <td id="3400-18"></td>
+            <td id="3400-19"></td>
+            <td id="3400-20"></td>
+        </tr>
+        <tr>
+            <th>3'200</th>
+            <td id="3200-9"></td>
+            <td id="3200-10"></td>
+            <td id="3200-11"></td>
+            <td id="3200-12"></td>
+            <td id="3200-13"></td>
+            <td id="3200-14"></td>
+            <td id="3200-15"></td>
+            <td id="3200-16"></td>
+            <td id="3200-17"></td>
+            <td id="3200-18"></td>
+            <td id="3200-19"></td>
+            <td id="3200-20"></td>
+        </tr>
+        <tr>
+            <th>3'000</th>
+            <td id="3000-9"></td>
+            <td id="3000-10"></td>
+            <td id="3000-11"></td>
+            <td id="3000-12"></td>
+            <td id="3000-13"></td>
+            <td id="3000-14"></td>
+            <td id="3000-15"></td>
+            <td id="3000-16"></td>
+            <td id="3000-17"></td>
+            <td id="3000-18"></td>
+            <td id="3000-19"></td>
+            <td id="3000-20"></td>
+        </tr>
+        <tr>
+            <th>2'800</th>
+            <td id="2800-9"></td>
+            <td id="2800-10"></td>
+            <td id="2800-11"></td>
+            <td id="2800-12"></td>
+            <td id="2800-13"></td>
+            <td id="2800-14"></td>
+            <td id="2800-15"></td>
+            <td id="2800-16"></td>
+            <td id="2800-17"></td>
+            <td id="2800-18"></td>
+            <td id="2800-19"></td>
+            <td id="2800-20"></td>
+        </tr>
+        <tr>
+            <th>2'600</th>
+            <td id="2600-9"></td>
+            <td id="2600-10"></td>
+            <td id="2600-11"></td>
+            <td id="2600-12"></td>
+            <td id="2600-13"></td>
+            <td id="2600-14"></td>
+            <td id="2600-15"></td>
+            <td id="2600-16"></td>
+            <td id="2600-17"></td>
+            <td id="2600-18"></td>
+            <td id="2600-19"></td>
+            <td id="2600-20"></td>
+        </tr>
+        <tr>
+            <th>2'400</th>
+            <td id="2400-9"></td>
+            <td id="2400-10"></td>
+            <td id="2400-11"></td>
+            <td id="2400-12"></td>
+            <td id="2400-13"></td>
+            <td id="2400-14"></td>
+            <td id="2400-15"></td>
+            <td id="2400-16"></td>
+            <td id="2400-17"></td>
+            <td id="2400-18"></td>
+            <td id="2400-19"></td>
+            <td id="2400-20"></td>
+        </tr>
+        <tr>
+            <th>2'200</th>
+            <td id="2200-9"></td>
+            <td id="2200-10"></td>
+            <td id="2200-11"></td>
+            <td id="2200-12"></td>
+            <td id="2200-13"></td>
+            <td id="2200-14"></td>
+            <td id="2200-15"></td>
+            <td id="2200-16"></td>
+            <td id="2200-17"></td>
+            <td id="2200-18"></td>
+            <td id="2200-19"></td>
+            <td id="2200-20"></td>
+        </tr>
+        <tr>
+            <th>2'000</th>
+            <td id="2000-9"></td>
+            <td id="2000-10"></td>
+            <td id="2000-11"></td>
+            <td id="2000-12"></td>
+            <td id="2000-13"></td>
+            <td id="2000-14"></td>
+            <td id="2000-15"></td>
+            <td id="2000-16"></td>
+            <td id="2000-17"></td>
+            <td id="2000-18"></td>
+            <td id="2000-19"></td>
+            <td id="2000-20"></td>
+        </tr>
+        <tr>
+            <th>1'800</th>
+            <td id="1800-9"></td>
+            <td id="1800-10"></td>
+            <td id="1800-11"></td>
+            <td id="1800-12"></td>
+            <td id="1800-13"></td>
+            <td id="1800-14"></td>
+            <td id="1800-15"></td>
+            <td id="1800-16"></td>
+            <td id="1800-17"></td>
+            <td id="1800-18"></td>
+            <td id="1800-19"></td>
+            <td id="1800-20"></td>
+        </tr>
+        <tr>
+            <th>1'600</th>
+            <td id="1600-9"></td>
+            <td id="1600-10"></td>
+            <td id="1600-11"></td>
+            <td id="1600-12"></td>
+            <td id="1600-13"></td>
+            <td id="1600-14"></td>
+            <td id="1600-15"></td>
+            <td id="1600-16"></td>
+            <td id="1600-17"></td>
+            <td id="1600-18"></td>
+            <td id="1600-19"></td>
+            <td id="1600-20"></td>
+        </tr>
+        <tr>
+            <th>1'400</th>
+            <td id="1400-9"></td>
+            <td id="1400-10"></td>
+            <td id="1400-11"></td>
+            <td id="1400-12"></td>
+            <td id="1400-13"></td>
+            <td id="1400-14"></td>
+            <td id="1400-15"></td>
+            <td id="1400-16"></td>
+            <td id="1400-17"></td>
+            <td id="1400-18"></td>
+            <td id="1400-19"></td>
+            <td id="1400-20"></td>
+        </tr>
+        <tr>
+            <th>1'200</th>
+            <td id="1200-9"></td>
+            <td id="1200-10"></td>
+            <td id="1200-11"></td>
+            <td id="1200-12"></td>
+            <td id="1200-13"></td>
+            <td id="1200-14"></td>
+            <td id="1200-15"></td>
+            <td id="1200-16"></td>
+            <td id="1200-17"></td>
+            <td id="1200-18"></td>
+            <td id="1200-19"></td>
+            <td id="1200-20"></td>
+        </tr>
+        <tr>
+            <th>1'000</th>
+            <td id="1000-9"></td>
+            <td id="1000-10"></td>
+            <td id="1000-11"></td>
+            <td id="1000-12"></td>
+            <td id="1000-13"></td>
+            <td id="1000-14"></td>
+            <td id="1000-15"></td>
+            <td id="1000-16"></td>
+            <td id="1000-17"></td>
+            <td id="1000-18"></td>
+            <td id="1000-19"></td>
+            <td id="1000-20"></td>
+        </tr>
+        <tr>
+            <th>800</th>
+            <td id="800-9"></td>
+            <td id="800-10"></td>
+            <td id="800-11"></td>
+            <td id="800-12"></td>
+            <td id="800-13"></td>
+            <td id="800-14"></td>
+            <td id="800-15"></td>
+            <td id="800-16"></td>
+            <td id="800-17"></td>
+            <td id="800-18"></td>
+            <td id="800-19"></td>
+            <td id="800-20"></td>
+        </tr>
+        <tr>
+            <th>H/Lt</th>
+            <th> 09h</th>
+            <th> 10h </th>
+            <th> 11h </th>
+            <th> 12h </th>
+            <th> 13h </th>
+            <th> 14h </th>
+            <th> 15h </th>
+            <th> 16h </th>
+            <th> 17h </th>
+            <th> 18h </th>
+            <th> 19h </th>
+            <th> 20h </th>
+        </tr>
+    </table>
+</div>

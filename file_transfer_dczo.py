@@ -2,8 +2,8 @@ import constants
 import locations
 import ftplib
 
-sytem_path = '/home/meteoman/icon_ch2/'
-file_location = sytem_path + 'emagrams/'
+system_path = '/home/meteoman/icon_ch2/'
+file_location = system_path + 'emagrams/'
 
 # send it to DCZO-webserver
 session = ftplib.FTP('ftp.dczo.ch', constants.ftp_user, constants.ftp_pw)
@@ -22,7 +22,7 @@ while lt_time <= 20:
         file4 = open(f'{file_location}emagram_loc{loc:02d}_d4lt{(lt_time):02d}.svg', 'rb')  # file to send
         session.storbinary(f'STOR icon_ch2/emagram_loc{loc:02d}_d0lt{(lt_time):02d}.svg', file0)  # send the file
         session.storbinary(f'STOR icon_ch2/emagram_loc{loc:02d}_d1lt{(lt_time):02d}.svg', file1)  # send the file
-        session.storbinary(f'STOR icon_ch2/emagram_loc{loc:02d}_d2lt{(lt_time):02d}.svg', file3)  # send the file
+        session.storbinary(f'STOR icon_ch2/emagram_loc{loc:02d}_d2lt{(lt_time):02d}.svg', file2)  # send the file
         session.storbinary(f'STOR icon_ch2/emagram_loc{loc:02d}_d3lt{(lt_time):02d}.svg', file3)  # send the file
         session.storbinary(f'STOR icon_ch2/emagram_loc{loc:02d}_d4lt{(lt_time):02d}.svg', file4)  # send the file
         loc = loc + 1
