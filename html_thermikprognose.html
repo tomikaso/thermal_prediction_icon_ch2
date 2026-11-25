@@ -79,6 +79,7 @@
 .active_button {width: 84px;  height: 36px;  border-color: #b00;   margin: 4px;
  			border-radius: 5px; font-size: 13px; color: #b00;}
 .thermal_active {border-color: #b00; color: #b00;}
+.hour_active {border-color: #b00; color: #b00; background-color: deepskyblue;}
 .switch {
   position: relative;
   display: inline-block;
@@ -135,26 +136,7 @@ input:checked + .slider:before {
   color: dimgrey;
   padding: 2px 2px 8px 2px;
 }
-.emagramm-layout {
-    display: grid;
-    grid-template-columns: 55% 45%;
-    gap: 20px;
-    align-items: start;
-}
-
-.emagramm img {
-    width: 100%;
-    height: auto;
-}
-
-.thermik-table {
-    min-width: 0;
-    overflow-x: auto;
-}
 @media (max-width: 700px) {
-    .emagramm-layout {
-        grid-template-columns: 1fr;
-    }
     .wind_font {
         font-size: 8px;
         color: dimgrey;
@@ -169,6 +151,7 @@ tr { background-color: aliceblue;} tr:not(:first-child):hover {background-color:
 <script>
    let day = 0;
    let loca = 0;
+   let local_time = 14;
    var startgrid;
    var potarray = new Array();
    var thermal_wind_sw = "thermal";
@@ -204,22 +187,21 @@ function display_data(i) {
     }
 function load_table(l, day){ // loops from 9 o'clock until 20.
   clear_table();
+    hour_comm = "";
   for (let t = 9; t <= 20; t++) {
-  document.getElementById("sun" + t).innerHTML = forecast[day][l][t].sun;
   document.getElementById("wind" + t).innerHTML = forecast[day][l][t].wind;
-  document.getElementById("cloud" + t).innerHTML = forecast[day][l][t].cloudcover;
-  document.getElementById("lift" + t).innerHTML = "";
+  cloud = "<img src='/images/thomaskamps/svg/" + forecast[day][l][t].model_data[4200]?.cl + ".svg'>";
+  document.getElementById("sun" + t).innerHTML = forecast[day][l][t].sun +"%<br>" + cloud;
+  document.getElementById("lift" + t).innerHTML = "⬆ 0";
   document.getElementById("lift" + t).style.backgroundColor = "";
   if (Number.isInteger(forecast[day][l][t].lift) || forecast[day][l][t].lift > 0){
-  document.getElementById("lift" + t).innerHTML = forecast[day][l][t].lift;
+  document.getElementById("lift" + t).innerHTML = "⬆ " + forecast[day][l][t].lift;
   document.getElementById("lift" + t).style.backgroundColor = liftcol(forecast[day][l][t].lift ?? 0);
   } else if (Number(forecast[day][l][t].lift) != 0) 
     {document.getElementById("lift" + t).innerHTML = forecast[day][l][t].lift; }
-  document.getElementById("pfd" + t).innerHTML = forecast[day][l][t].potential;
-  document.getElementById("base" + t).innerHTML = forecast[day][l][t].base;
-  show_ema(14);
   }
   document.getElementById("thermal_comment").innerHTML = forecast[day][l][24].comment;
+  show_ema(14);
   document.getElementById("loc_label").innerHTML = grids[loca] + forecast[day][loca][24].modelrun;
   if (thermal_wind_sw === "thermal"){display_thermal();} else {display_wind();}
 }
@@ -240,7 +222,7 @@ function display_thermal(){l= loca;
       for (let h = 800; h<=4200; h=h+200)
 							{ 
             if(forecast[day][l][t].model_data[h]?.cl ?? "" != ""){
-              cloud = "<img src='/images/thomaskamps/svg/" + forecast[day][l][t].model_data[h]?.cl + ".svg?'"+ datehour()+ ">";
+              cloud = "<img src='/images/thomaskamps/svg/" + forecast[day][l][t].model_data[h]?.cl + ".svg'>";
               document.getElementById(h + "-" + t).innerHTML = cloud;
             }else{
               if(forecast[day][l][t].model_data[h]?.th ?? 0 > 0){
@@ -307,8 +289,28 @@ function liftcol(lift){
                 return `rgba(${r}, ${r + fac}, ${r - fac}, 1)`
                 }
 
-function show_ema(lt) {var fd = loca.toString().padStart(2, '0'); var ft = lt.toString().padStart(2, '0'); dh = datehour();
-  document.getElementById("ema-svg").src = `/images/thomaskamps/icon_ch2/emagram_loc${fd}_d${day}lt${ft}.svg?${dh}`;}
+function show_ema(lt){ if(lt == 1 ) {local_time ++; lt=local_time;} if (local_time == 21) {local_time = 9; lt = 9;}
+    var fd = loca.toString().padStart(2, '0'); var ft = lt.toString().padStart(2, '0'); dh = datehour();
+  document.getElementById("ema-svg").src = `/images/thomaskamps/icon_ch2/emagram_loc${fd}_d${day}lt${ft}.svg?${dh}`;    
+  hour_comm = " Basis / Top: " + forecast[day][loca][lt].base;                   
+  document.getElementById("extra1").innerHTML = createMiniWatchSVG(lt, 20) + "PFD: " + forecast[day][loca][lt].potential + hour_comm;
+for (let t = 9; t < 21; t++) {document.getElementById("hour" + t).className = "";}
+    document.getElementById("hour" + lt).className   += " hour_active";                     
+}
+
+function createMiniWatchSVG(hour, size = 24) {
+  const normalizedHour = ((hour % 12) + 12) % 12;
+  const hourAngle = normalizedHour * 30;
+  return `
+    <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://w3.org" aria-label="Watch showing ${hour}:00">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+      <line x1="12" y1="12" x2="12" y2="5.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+      <line x1="12" y1="12" x2="12" y2="7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" transform="rotate(${hourAngle} 12 12)" />
+      <circle cx="12" cy="12" r="1.25" fill="currentColor" />
+    </svg>
+  `.trim();
+}
+
 </script>
 <div class="overview" id="overview">
     <button class="thermal1 smov" id="thermal1" onclick="show_grid(1)"><a class="km">LO</a></button>
@@ -338,27 +340,68 @@ function show_ema(lt) {var fd = loca.toString().padStart(2, '0'); var ft = lt.to
    
     <div >
   <table>
-    <tr>
-        <th rowspan="14">
-              <img class="emagram_svg" id="ema-svg" src="emagrams/emagram_loc00_d0lt10.svg" width="250">
-              </th>
-
-        
-        
-        <th>Zeit<br>LT</th><th>Wind<br>km/h</th><th>Sonne<br>%</th><th>Wolken<br>l-m-h</th><th>Lift<br>m/s</th><th>PFD<br>km</th><th>Base/Top<br>m</th></tr>
-    <tr onmouseover="show_ema(9)"><td>09:00</td><td id="wind9">4</td><td id="sun9"></td><td id="cloud9">8-8-0</td><td id="lift9"></td><td id="pfd9"></td><td id="base9"></td></tr>
-    <tr onmouseover="show_ema(10)"><td>10:00</td><td id="wind10">4</td><td id="sun10"></td><td id="cloud10">8-8-0</td><td id="lift10"></td><td id="pfd10"></td><td id="base10"></td></tr>
-    <tr onmouseover="show_ema(11)"><td>11:00</td><td id="wind11">0</td><td id="sun11"></td><td id="cloud11">8-8-0</td><td id="lift11"></td><td id="pfd11"></td><td id="base11"></td></tr>
-    <tr onmouseover="show_ema(12)"><td>12:00</td><td id="wind12">5</td><td id="sun12"></td><td id="cloud12">8-8-4</td><td id="lift12"></td><td id="pfd12"></td><td id="base12"></td></tr>
-    <tr onmouseover="show_ema(13)"><td>13:00</td><td id="wind13">5</td><td id="sun13"></td><td id="cloud13">8-8-0</td><td id="lift13"></td><td id="pfd13"></td><td id="base13"></td></tr>
-    <tr onmouseover="show_ema(14)"><td>14:00</td><td id="wind14">5</td><td id="sun14"></td><td id="cloud14">8-8-1</td><td id="lift14"></td><td id="pfd14"></td><td id="base14"></td></tr>
-    <tr onmouseover="show_ema(15)"><td>15:00</td><td id="wind15">5</td><td id="sun15"></td><td id="cloud15">8-8-0</td><td id="lift15"></td><td id="pfd15"></td><td id="base15"></td></tr>
-    <tr onmouseover="show_ema(16)"><td>16:00</td><td id="wind16">5</td><td id="sun16"></td><td id="cloud16">8-8-0</td><td id="lift16"></td><td id="pfd16"></td><td id="base16"></td></tr>
-    <tr onmouseover="show_ema(17)"><td>17:00</td><td id="wind17">5</td><td id="sun17"></td><td id="cloud17">8-8-0</td><td id="lift17"></td><td id="pfd17"></td><td id="base17"></td></tr>
-    <tr onmouseover="show_ema(18)"><td>18:00</td><td id="wind18">5</td><td id="sun18"></td><td id="cloud18">8-8-0</td><td id="lift18"></td><td id="pfd18"></td><td id="base18"></td></tr>
-    <tr onmouseover="show_ema(19)"><td>19:00</td><td id="wind19">4</td><td id="sun19"></td><td id="cloud19">8-8-0</td><td id="lift19"></td><td id="pfd19"></td><td id="base19"></td></tr>
-    <tr onmouseover="show_ema(20)"><td>20:00</td><td id="wind20">0</td><td id="sun20"></td><td id="cloud20">8-8-0</td><td id="lift20"></td><td id="pfd20"></td><td id="base20"></td></tr>
-    <tr><td id="thermal_comment" colspan="7">Gute Thermik</td></tr>
+  <tr>
+   <th id="hour9"  onmouseover="show_ema(9)"> 09h</th>
+   <th id="hour10" onmouseover="show_ema(10)"> 10h </th>
+   <th id="hour11" onmouseover="show_ema(11)"> 11h </th>
+   <th id="hour12" onmouseover="show_ema(12)"> 12h </th>
+   <th id="hour13" onmouseover="show_ema(13)"> 13h </th>
+   <th id="hour14" onmouseover="show_ema(14)"> 14h </th>
+   <th id="hour15" onmouseover="show_ema(15)"> 15h </th>
+   <th id="hour16" onmouseover="show_ema(16)"> 16h </th>
+   <th id="hour17" onmouseover="show_ema(17)"> 17h </th>
+   <th id="hour18" onmouseover="show_ema(18)"> 18h </th>
+   <th id="hour19" onmouseover="show_ema(19)"> 19h </th>
+   <th id="hour20" onmouseover="show_ema(20)"> 20h </th>
+ </tr>
+ <tr>
+   <td id="wind9"> </td>
+   <td id="wind10"> </td>
+   <td id="wind11"> </td>
+   <td id="wind12"> </td>
+   <td id="wind13"> </td>
+   <td id="wind14"> </td>
+   <td id="wind15"> </td>
+   <td id="wind16"> </td>
+   <td id="wind17"> </td>
+   <td id="wind18"> </td>
+   <td id="wind19"> </td>
+   <td id="wind20"> </td>
+ </tr>
+<tr>
+   <td id="sun9"> </td>
+   <td id="sun10"> </td>
+   <td id="sun11"> </td>
+   <td id="sun12"> </td>
+   <td id="sun13"> </td>
+   <td id="sun14"> </td>
+   <td id="sun15"> </td>
+   <td id="sun16"> </td>
+   <td id="sun17"> </td>
+   <td id="sun18"> </td>
+   <td id="sun19"> </td>
+   <td id="sun20"> </td>
+ </tr>
+<tr>
+   <td id="lift9"> </td>
+   <td id="lift10"> </td>
+   <td id="lift11"> </td>
+   <td id="lift12"> </td>
+   <td id="lift13"> </td>
+   <td id="lift14"> </td>
+   <td id="lift15"> </td>
+   <td id="lift16"> </td>
+   <td id="lift17"> </td>
+   <td id="lift18"> </td>
+   <td id="lift19"> </td>
+   <td id="lift20"> </td>
+ </tr>
+ <tr><td colspan="5" id = "extra1"></td><td colspan="7" id="thermal_comment" colspan="4">:-)</td></tr>  
+ <tr>
+        <td colspan="12" onclick="show_ema(1)">
+              <img class="emagram_svg" id="ema-svg" src="emagrams/emagram_loc00_d0lt10.svg" >
+        </td>
+ </tr> 
   </table>
 </div></div>
 <div>
