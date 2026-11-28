@@ -18,6 +18,17 @@
   margin: 0px;
   border-radius: 0px;
 }
+.windrow td {
+    height: 15px;
+    line-height: 15px;
+    vertical-align: middle;
+    overflow: visible;
+    white-space: nowrap;
+}
+
+.wind-row svg {
+    vertical-align: middle;
+}
 .smov {position: absolute; width: 26px; height: 26px; margin: 0px; padding: 0px 0px 0px 0px; border-radius: 13px; border: 2px solid gainsboro; line-height: normal; text-align: center; background-color: lightgreen; padding-inline-start: 1px;}
 .smov:hover {border-color: red;}
 .thermal0 {
@@ -189,20 +200,22 @@ function load_table(l, day){ // loops from 9 o'clock until 20.
   clear_table();
     hour_comm = "";
   for (let t = 9; t <= 20; t++) {
-  document.getElementById("wind" + t).innerHTML = forecast[day][l][t].wind;
+document.getElementById("wind" + t).innerHTML = arrow_svg(forecast[day][l][t].wind_deg)
+    + "<span class='wind_font'>" + (forecast[day][l][t].wind)+ "</span>";
+document.getElementById("wind" + t).style.backgroundColor = wind_color[Math.min(Math.floor(forecast[day][l][t].wind/5), 12)];
+
   cloud = "<img src='/images/thomaskamps/svg/" + forecast[day][l][t].model_data[4200]?.cl + ".svg'>";
   document.getElementById("sun" + t).innerHTML = forecast[day][l][t].sun +"%<br>" + cloud;
-  document.getElementById("lift" + t).innerHTML = "⬆ 0";
+  document.getElementById("lift" + t).innerHTML = "0";
   document.getElementById("lift" + t).style.backgroundColor = "";
   if (Number.isInteger(forecast[day][l][t].lift) || forecast[day][l][t].lift > 0){
-  document.getElementById("lift" + t).innerHTML = "⬆ " + forecast[day][l][t].lift;
+  document.getElementById("lift" + t).innerHTML = forecast[day][l][t].lift;
   document.getElementById("lift" + t).style.backgroundColor = liftcol(forecast[day][l][t].lift ?? 0);
   } else if (Number(forecast[day][l][t].lift) != 0) 
     {document.getElementById("lift" + t).innerHTML = forecast[day][l][t].lift; }
   }
   document.getElementById("thermal_comment").innerHTML = forecast[day][l][24].comment;
-  show_ema(14);
-  document.getElementById("loc_label").innerHTML = grids[loca] + forecast[day][loca][24].modelrun;
+  local_time = 14; show_ema(14);
   if (thermal_wind_sw === "thermal"){display_thermal();} else {display_wind();}
 }
 
@@ -256,7 +269,7 @@ function arrow_svg(angle){
       let by = r + padd + Math.cos((angle + 130) * pi180) * r * 0.8;
       let cx = r + padd - Math.sin((angle - 130) * pi180) * r * 0.8;
       let cy = r + padd + Math.cos((angle - 130) * pi180) * r * 0.8;
-      return `<svg height="9" width="9" xmlns=http://www.w3.org/2000/svg><polygon points="${cx},${cy} ${ax},${ay} ${bx},${by} ${a2x},${a2y}" fill = "grey"></svg>`}
+      return `<svg height="9" width="9" viewBox="0 0 9 9" xmlns=http://www.w3.org/2000/svg><polygon points="${cx},${cy} ${ax},${ay} ${bx},${by} ${a2x},${a2y}" fill = "grey"></svg>`}
 function col(distst){
           		var dist = parseInt(distst);
                 if (dist > 250 ){dist = 250;}
@@ -290,12 +303,16 @@ function liftcol(lift){
                 }
 
 function show_ema(lt){ if(lt == 1 ) {local_time ++; lt=local_time;} if (local_time == 21) {local_time = 9; lt = 9;}
+    local_time = lt;
     var fd = loca.toString().padStart(2, '0'); var ft = lt.toString().padStart(2, '0'); dh = datehour();
   document.getElementById("ema-svg").src = `/images/thomaskamps/icon_ch2/emagram_loc${fd}_d${day}lt${ft}.svg?${dh}`;    
-  hour_comm = " Basis / Top: " + forecast[day][loca][lt].base;                   
-  document.getElementById("extra1").innerHTML = createMiniWatchSVG(lt, 20) + "PFD: " + forecast[day][loca][lt].potential + hour_comm;
+  hour_comment = " Basis / Top: " + forecast[day][loca][lt].base + "<br> Nullfradgrenze auf: " + forecast[day][loca][lt].freezing + "m.";                   
+  document.getElementById("extra1").innerHTML = createMiniWatchSVG(lt, 20) + " PFD: " + forecast[day][loca][lt].potential + hour_comment;
+  document.getElementById("hour0").innerHTML = createMiniWatchSVG(lt, 20);
+  document.getElementById("wind0").innerHTML = arrow_svg(forecast[day][loca][lt].wind_deg);
 for (let t = 9; t < 21; t++) {document.getElementById("hour" + t).className = "";}
-    document.getElementById("hour" + lt).className   += " hour_active";                     
+    document.getElementById("hour" + lt).className   += " hour_active"; 
+    document.getElementById("loc_label").innerHTML = grids[loca] + ", " + forecast[day][loca][24].modelrun;
 }
 
 function createMiniWatchSVG(hour, size = 24) {
@@ -336,11 +353,9 @@ function createMiniWatchSVG(hour, size = 24) {
 
 <div >
   <h3 id="loc_label">Location</h3>
-   
-   
-    <div >
   <table>
   <tr>
+   <th id="hour0"></th>
    <th id="hour9"  onmouseover="show_ema(9)"> 09h</th>
    <th id="hour10" onmouseover="show_ema(10)"> 10h </th>
    <th id="hour11" onmouseover="show_ema(11)"> 11h </th>
@@ -354,7 +369,8 @@ function createMiniWatchSVG(hour, size = 24) {
    <th id="hour19" onmouseover="show_ema(19)"> 19h </th>
    <th id="hour20" onmouseover="show_ema(20)"> 20h </th>
  </tr>
- <tr>
+ <tr class="windrow">
+   <td id="wind0">W</td>
    <td id="wind9"> </td>
    <td id="wind10"> </td>
    <td id="wind11"> </td>
@@ -369,6 +385,7 @@ function createMiniWatchSVG(hour, size = 24) {
    <td id="wind20"> </td>
  </tr>
 <tr>
+    <td>☼</td>
    <td id="sun9"> </td>
    <td id="sun10"> </td>
    <td id="sun11"> </td>
@@ -383,6 +400,7 @@ function createMiniWatchSVG(hour, size = 24) {
    <td id="sun20"> </td>
  </tr>
 <tr>
+    <td>⬆</td>
    <td id="lift9"> </td>
    <td id="lift10"> </td>
    <td id="lift11"> </td>
@@ -396,14 +414,14 @@ function createMiniWatchSVG(hour, size = 24) {
    <td id="lift19"> </td>
    <td id="lift20"> </td>
  </tr>
- <tr><td colspan="5" id = "extra1"></td><td colspan="7" id="thermal_comment" colspan="4">:-)</td></tr>  
+ <tr><td colspan="6" id = "extra1"></td><td colspan="7" id="thermal_comment" colspan="4">:-)</td></tr>  
  <tr>
-        <td colspan="12" onclick="show_ema(1)">
+        <td colspan="13" onclick="show_ema(1)">
               <img class="emagram_svg" id="ema-svg" src="emagrams/emagram_loc00_d0lt10.svg" >
         </td>
  </tr> 
   </table>
-</div></div>
+</div>
 <div>
     <h3 id="b2">Thermik-Modell</h3>
     <span>Wind  </span><label class="switch" id="wind_therm_select" onclick="switch_wind()" >
